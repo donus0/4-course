@@ -4,8 +4,6 @@
 #include <cctype>
 #include <stdexcept>
 
-namespace {
-
 int precedence(char op) {
     switch (op) {
         case '+':
@@ -28,8 +26,6 @@ bool isRightAssociative(char op) {
 bool isOperator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
 }
-
-}  // namespace
 
 std::string infixToPostfix(const std::string& infix) {
     Stack<char> operators;

@@ -4,8 +4,6 @@
 #include "InfixToPostfix.hpp"
 #include "PostfixEval.hpp"
 
-namespace {
-
 void printMenu() {
     std::cout << "\n=== Постфиксное преобразование выражений (метод Дийкстры) ===\n"
               << "1. Инфикс -> постфикс (числа однозначные), например: (1+2)*3-9/3^2\n"
@@ -37,8 +35,6 @@ void handleEvaluate() {
         std::cout << "Ошибка: " << e.what() << "\n";
     }
 }
-
-}  // namespace
 
 int main() {
     while (true) {

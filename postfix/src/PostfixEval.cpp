@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <string>
 
-namespace {
 
 bool isOperator(const std::string& token) {
     return token.size() == 1 && std::string("+-*/^").find(token[0]) != std::string::npos;
@@ -31,8 +30,6 @@ double applyOperator(char op, double a, double b) {
             throw std::invalid_argument(std::string("Неизвестный оператор: ") + op);
     }
 }
-
-}  // namespace
 
 double evaluatePostfix(const std::string& postfix) {
     Stack<double> values;
