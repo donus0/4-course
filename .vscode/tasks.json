@@ -11,22 +11,27 @@
                 "-std=c++17",
                 "-Wall",
                 "-Wextra",
-                "-I${workspaceFolder}\\include",
-                "${workspaceFolder}\\src\\main.cpp",
-                "${workspaceFolder}\\src\\InfixToPostfix.cpp",
-                "${workspaceFolder}\\src\\PostfixEval.cpp",
+                "-I${workspaceFolder}\\postfix\\include",
+                "${workspaceFolder}\\postfix\\src\\main.cpp",
+                "${workspaceFolder}\\postfix\\src\\InfixToPostfix.cpp",
+                "${workspaceFolder}\\postfix\\src\\PostfixEval.cpp",
                 "-o",
-                "${workspaceFolder}\\bin\\postfix.exe"
+                "${workspaceFolder}\\postfix\\bin\\postfix.exe"
             ],
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}\\postfix"
             },
             "problemMatcher": ["$gcc"],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "detail": "Сборка проекта g++ из MSYS2 (mingw64)"
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "detail": "Сборка проекта g++ из MSYS2 (ucrt64)"
         }
     ]
 }

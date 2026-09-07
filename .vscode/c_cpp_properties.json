@@ -3,8 +3,8 @@
         {
             "name": "MSYS2-UCRT64",
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/include"
+                "${workspaceFolder}/postfix/**",
+                "${workspaceFolder}/postfix/include"
             ],
             "defines": [],
             "compilerPath": "C:\\msys64\\ucrt64\\bin\\g++.exe",
