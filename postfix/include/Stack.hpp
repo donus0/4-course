@@ -17,10 +17,9 @@ private:
     };
 
     Node* top_;
-    std::size_t size_;
 
 public:
-    Stack() : top_(nullptr), size_(0) {}
+    Stack() : top_(nullptr) {}
 
     Stack(const Stack&) = delete;
     Stack& operator=(const Stack&) = delete;
@@ -31,7 +30,6 @@ public:
 
     void push(const T& value) {
         top_ = new Node(value, top_);
-        ++size_;
     }
 
     void pop() {
@@ -41,7 +39,6 @@ public:
         Node* old = top_;
         top_ = top_->next;
         delete old;
-        --size_;
     }
 
     T& top() {
@@ -63,7 +60,11 @@ public:
     }
 
     std::size_t size() const {
-        return size_;
+        std::size_t count = 0;
+        for (Node* node = top_; node != nullptr; node = node->next) {
+            ++count;
+        }
+        return count;
     }
 
     void clear() {
