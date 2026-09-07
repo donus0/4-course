@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "g++ build postfix (MSYS2)",
+            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "-std=c++17",
+                "-Wall",
+                "-Wextra",
+                "-I${workspaceFolder}\\include",
+                "${workspaceFolder}\\src\\main.cpp",
+                "${workspaceFolder}\\src\\InfixToPostfix.cpp",
+                "${workspaceFolder}\\src\\PostfixEval.cpp",
+                "-o",
+                "${workspaceFolder}\\bin\\postfix.exe"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Сборка проекта g++ из MSYS2 (mingw64)"
+        }
+    ]
+}
