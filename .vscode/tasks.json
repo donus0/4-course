@@ -1,37 +1,28 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "type": "cppbuild",
-            "label": "g++ build postfix (MSYS2)",
-            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
-            "args": [
-                "-fdiagnostics-color=always",
-                "-g",
-                "-std=c++17",
-                "-Wall",
-                "-Wextra",
-                "-I${workspaceFolder}\\postfix\\include",
-                "${workspaceFolder}\\postfix\\src\\main.cpp",
-                "${workspaceFolder}\\postfix\\src\\InfixToPostfix.cpp",
-                "${workspaceFolder}\\postfix\\src\\PostfixEval.cpp",
-                "-o",
-                "${workspaceFolder}\\postfix\\bin\\postfix.exe"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}\\postfix"
-            },
-            "problemMatcher": ["$gcc"],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "clear": true
-            },
-            "detail": "Сборка проекта g++ из MSYS2 (ucrt64)"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cmake: configure (postfix)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/postfix", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build (postfix)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build/postfix", "-j"],
+      "dependsOn": "cmake: configure (postfix)",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: postfix",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/postfix/postfix/postfix.exe",
+      "dependsOn": "cmake: build (postfix)",
+      "problemMatcher": []
+    }
+  ]
 }
