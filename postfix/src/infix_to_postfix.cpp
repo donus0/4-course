@@ -1,5 +1,5 @@
-#include "InfixToPostfix.hpp"
-#include "Stack.hpp"
+#include "infix_to_postfix.hpp"
+#include "stack.hpp"
 
 #include <cctype>
 #include <stdexcept>
@@ -19,16 +19,16 @@ int precedence(char op) {
     }
 }
 
-bool isRightAssociative(char op) {
+bool is_right_associative(char op) {
     return op == '^';
 }
 
-bool isOperator(char c) {
+bool is_operator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
 }
 
-std::string infixToPostfix(const std::string& infix, DynamicArray<std::string>& operands) {
-    Stack<char> operators;
+std::string infix_to_postfix(const std::string& infix, dynamic_array<std::string>& operands) {
+    stack<char> operators;
     std::string postfix;
 
     std::size_t i = 0;
@@ -47,7 +47,7 @@ std::string infixToPostfix(const std::string& infix, DynamicArray<std::string>& 
                 ++i;
             }
             std::string token = infix.substr(start, i - start);
-            operands.insertSorted(token);
+            operands.insert_sorted(token);
             postfix += token;
             postfix += ' ';
         } else if (c == '(') {
@@ -69,10 +69,10 @@ std::string infixToPostfix(const std::string& infix, DynamicArray<std::string>& 
                 throw std::invalid_argument("Несогласованные скобки в выражении");
             }
             ++i;
-        } else if (isOperator(c)) {
+        } else if (is_operator(c)) {
             while (!operators.empty() && operators.top() != '(' &&
                    (precedence(operators.top()) > precedence(c) ||
-                    (precedence(operators.top()) == precedence(c) && !isRightAssociative(c)))) {
+                    (precedence(operators.top()) == precedence(c) && !is_right_associative(c)))) {
                 postfix += operators.top();
                 postfix += ' ';
                 operators.pop();

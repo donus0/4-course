@@ -1,17 +1,16 @@
-#include "PostfixEval.hpp"
-#include "Stack.hpp"
+#include "postfix_eval.hpp"
+#include "stack.hpp"
 
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
-
-bool isOperator(const std::string& token) {
+bool is_operator(const std::string& token) {
     return token.size() == 1 && std::string("+-*/^").find(token[0]) != std::string::npos;
 }
 
-double applyOperator(char op, double a, double b) {
+double apply_operator(char op, double a, double b) {
     switch (op) {
         case '+':
             return a + b;
@@ -31,13 +30,13 @@ double applyOperator(char op, double a, double b) {
     }
 }
 
-double evaluatePostfix(const std::string& postfix) {
-    Stack<double> values;
+double evaluate_postfix(const std::string& postfix) {
+    stack<double> values;
     std::istringstream tokens(postfix);
     std::string token;
 
     while (tokens >> token) {
-        if (isOperator(token)) {
+        if (is_operator(token)) {
             if (values.size() < 2) {
                 throw std::invalid_argument("Некорректное постфиксное выражение: недостаточно операндов");
             }
@@ -45,7 +44,7 @@ double evaluatePostfix(const std::string& postfix) {
             values.pop();
             double a = values.top();
             values.pop();
-            values.push(applyOperator(token[0], a, b));
+            values.push(apply_operator(token[0], a, b));
         } else {
             std::size_t pos = 0;
             double number = 0.0;

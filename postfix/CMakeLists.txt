@@ -1,7 +1,7 @@
 add_executable(postfix
     src/main.cpp
-    src/InfixToPostfix.cpp
-    src/PostfixEval.cpp
+    src/infix_to_postfix.cpp
+    src/postfix_eval.cpp
 )
 
 target_include_directories(postfix PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

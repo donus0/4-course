@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "DynamicArray.hpp"
+#include "dynamic_array.hpp"
 
 // Преобразование инфиксного выражения в постфиксное по алгоритму Дийкстры
 // (сортировочная станция). Операнды (числа и переменные) могут состоять из
@@ -12,4 +12,4 @@
 // В operands складываются все встреченные во входном выражении операнды
 // (входной массив), отсортированные по возрастанию для дихотомического
 // поиска по ним.
-std::string infixToPostfix(const std::string& infix, DynamicArray<std::string>& operands);
+std::string infix_to_postfix(const std::string& infix, dynamic_array<std::string>& operands);

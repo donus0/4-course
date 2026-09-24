@@ -9,54 +9,54 @@
 // операндов (переменных/чисел длиной более одного символа), встречающихся
 // во входном инфиксном выражении, и как основа для дихотомического поиска.
 template <typename T>
-class DynamicArray {
+class dynamic_array {
 private:
     T* data_;
     std::size_t size_;
     std::size_t capacity_;
 
-    void ensureCapacity(std::size_t minCapacity) {
-        if (capacity_ >= minCapacity) {
+    void ensure_capacity(std::size_t min_capacity) {
+        if (capacity_ >= min_capacity) {
             return;
         }
-        std::size_t newCapacity = capacity_ == 0 ? 4 : capacity_ * 2;
-        while (newCapacity < minCapacity) {
-            newCapacity *= 2;
+        std::size_t new_capacity = capacity_ == 0 ? 4 : capacity_ * 2;
+        while (new_capacity < min_capacity) {
+            new_capacity *= 2;
         }
-        T* newData = new T[newCapacity];
+        T* new_data = new T[new_capacity];
         for (std::size_t i = 0; i < size_; ++i) {
-            newData[i] = std::move(data_[i]);
+            new_data[i] = std::move(data_[i]);
         }
         delete[] data_;
-        data_ = newData;
-        capacity_ = newCapacity;
+        data_ = new_data;
+        capacity_ = new_capacity;
     }
 
 public:
-    DynamicArray() : data_(nullptr), size_(0), capacity_(0) {}
+    dynamic_array() : data_(nullptr), size_(0), capacity_(0) {}
 
-    DynamicArray(const DynamicArray&) = delete;
-    DynamicArray& operator=(const DynamicArray&) = delete;
+    dynamic_array(const dynamic_array&) = delete;
+    dynamic_array& operator=(const dynamic_array&) = delete;
 
-    ~DynamicArray() {
+    ~dynamic_array() {
         delete[] data_;
     }
 
-    void pushBack(const T& value) {
-        ensureCapacity(size_ + 1);
+    void push_back(const T& value) {
+        ensure_capacity(size_ + 1);
         data_[size_++] = value;
     }
 
     T& operator[](std::size_t index) {
         if (index >= size_) {
-            throw std::out_of_range("DynamicArray::operator[]: индекс вне диапазона");
+            throw std::out_of_range("dynamic_array::operator[]: индекс вне диапазона");
         }
         return data_[index];
     }
 
     const T& operator[](std::size_t index) const {
         if (index >= size_) {
-            throw std::out_of_range("DynamicArray::operator[]: индекс вне диапазона");
+            throw std::out_of_range("dynamic_array::operator[]: индекс вне диапазона");
         }
         return data_[index];
     }
@@ -71,7 +71,7 @@ public:
 
     // Дихотомический (бинарный) поиск значения в отсортированном массиве.
     // Возвращает индекс элемента или -1, если значение не найдено.
-    long binarySearch(const T& value) const {
+    long binary_search(const T& value) const {
         long lo = 0;
         long hi = static_cast<long>(size_) - 1;
 
@@ -92,7 +92,7 @@ public:
     // Вставляет значение, сохраняя массив отсортированным (позиция ищется
     // тем же дихотомическим способом). Если значение уже есть в массиве,
     // ничего не делает и возвращает false.
-    bool insertSorted(const T& value) {
+    bool insert_sorted(const T& value) {
         std::size_t lo = 0;
         std::size_t hi = size_;
 
@@ -109,7 +109,7 @@ public:
             return false;
         }
 
-        ensureCapacity(size_ + 1);
+        ensure_capacity(size_ + 1);
         for (std::size_t i = size_; i > lo; --i) {
             data_[i] = std::move(data_[i - 1]);
         }

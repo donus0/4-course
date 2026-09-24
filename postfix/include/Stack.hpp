@@ -6,51 +6,51 @@
 
 // Стек, реализованный на базе односвязного списка.
 template <typename T>
-class Stack {
+class stack {
 private:
-    struct Node {
+    struct node {
         T data;
-        Node* next;
+        node* next;
 
-        Node(const T& value, Node* nextNode)
-            : data(value), next(nextNode) {}
+        node(const T& value, node* next_node)
+            : data(value), next(next_node) {}
     };
 
-    Node* top_;
+    node* top_;
 
 public:
-    Stack() : top_(nullptr) {}
+    stack() : top_(nullptr) {}
 
-    Stack(const Stack&) = delete;
-    Stack& operator=(const Stack&) = delete;
+    stack(const stack&) = delete;
+    stack& operator=(const stack&) = delete;
 
-    ~Stack() {
+    ~stack() {
         clear();
     }
 
     void push(const T& value) {
-        top_ = new Node(value, top_);
+        top_ = new node(value, top_);
     }
 
     void pop() {
         if (empty()) {
-            throw std::out_of_range("Stack::pop: стек пуст");
+            throw std::out_of_range("stack::pop: стек пуст");
         }
-        Node* old = top_;
+        node* old = top_;
         top_ = top_->next;
         delete old;
     }
 
     T& top() {
         if (empty()) {
-            throw std::out_of_range("Stack::top: стек пуст");
+            throw std::out_of_range("stack::top: стек пуст");
         }
         return top_->data;
     }
 
     const T& top() const {
         if (empty()) {
-            throw std::out_of_range("Stack::top: стек пуст");
+            throw std::out_of_range("stack::top: стек пуст");
         }
         return top_->data;
     }
@@ -61,7 +61,7 @@ public:
 
     std::size_t size() const {
         std::size_t count = 0;
-        for (Node* node = top_; node != nullptr; node = node->next) {
+        for (node* n = top_; n != nullptr; n = n->next) {
             ++count;
         }
         return count;

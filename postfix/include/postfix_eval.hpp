@@ -6,4 +6,4 @@
 // Числа могут быть многозначными (в т.ч. с плавающей точкой) и должны быть
 // разделены пробелами, например: "12 3 4 * +".
 // Поддерживаются операторы + - * / ^.
-double evaluatePostfix(const std::string& postfix);
+double evaluate_postfix(const std::string& postfix);

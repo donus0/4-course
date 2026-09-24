@@ -6,79 +6,79 @@
 // для любого узла всё левое поддерево меньше ключа, а правое — больше.
 // Даёт операции вставки и поиска за O(h), где h — высота дерева.
 template <typename Key, typename Value>
-class BinaryTree {
+class binary_tree {
 private:
-    struct Node {
+    struct node {
         Key key;
         Value value;
-        Node* left;
-        Node* right;
+        node* left;
+        node* right;
 
-        Node(const Key& k, const Value& v)
+        node(const Key& k, const Value& v)
             : key(k), value(v), left(nullptr), right(nullptr) {}
     };
 
-    Node* root_;
+    node* root_;
     std::size_t size_;
 
-    static void destroy(Node* node) {
-        if (node == nullptr) {
+    static void destroy(node* n) {
+        if (n == nullptr) {
             return;
         }
-        destroy(node->left);
-        destroy(node->right);
-        delete node;
+        destroy(n->left);
+        destroy(n->right);
+        delete n;
     }
 
-    static Node* findNode(Node* node, const Key& key) {
-        while (node != nullptr) {
-            if (key < node->key) {
-                node = node->left;
-            } else if (node->key < key) {
-                node = node->right;
+    static node* find_node(node* n, const Key& key) {
+        while (n != nullptr) {
+            if (key < n->key) {
+                n = n->left;
+            } else if (n->key < key) {
+                n = n->right;
             } else {
-                return node;
+                return n;
             }
         }
         return nullptr;
     }
 
     template <typename Visitor>
-    static void inorder(Node* node, Visitor& visitor) {
-        if (node == nullptr) {
+    static void inorder(node* n, Visitor& visitor) {
+        if (n == nullptr) {
             return;
         }
-        inorder(node->left, visitor);
-        visitor(node->key, node->value);
-        inorder(node->right, visitor);
+        inorder(n->left, visitor);
+        visitor(n->key, n->value);
+        inorder(n->right, visitor);
     }
 
 public:
-    BinaryTree() : root_(nullptr), size_(0) {}
+    binary_tree() : root_(nullptr), size_(0) {}
 
-    BinaryTree(const BinaryTree&) = delete;
-    BinaryTree& operator=(const BinaryTree&) = delete;
+    binary_tree(const binary_tree&) = delete;
+    binary_tree& operator=(const binary_tree&) = delete;
 
-    ~BinaryTree() {
+    ~binary_tree() {
         destroy(root_);
     }
 
     // Поиск значения по ключу. Возвращает указатель на значение или nullptr,
     // если ключ в дереве не встречается.
     Value* find(const Key& key) {
-        Node* node = findNode(root_, key);
-        return node == nullptr ? nullptr : &node->value;
+        node* n = find_node(root_, key);
+        return n == nullptr ? nullptr : &n->value;
     }
 
     const Value* find(const Key& key) const {
-        Node* node = findNode(root_, key);
-        return node == nullptr ? nullptr : &node->value;
+        node* n = find_node(root_, key);
+        return n == nullptr ? nullptr : &n->value;
     }
 
     // Вставляет ключ со значением по умолчанию, если его ещё нет, и
     // возвращает ссылку на значение (как std::map::operator[]).
     Value& operator[](const Key& key) {
-        Node** slot = &root_;
+        node** slot = &root_;
         while (*slot != nullptr) {
             if (key < (*slot)->key) {
                 slot = &(*slot)->left;
@@ -88,7 +88,7 @@ public:
                 return (*slot)->value;
             }
         }
-        *slot = new Node(key, Value());
+        *slot = new node(key, Value());
         ++size_;
         return (*slot)->value;
     }
@@ -104,7 +104,7 @@ public:
     // Обходит дерево в порядке возрастания ключей (левое поддерево, узел,
     // правое поддерево), вызывая visitor(key, value) для каждого узла.
     template <typename Visitor>
-    void inorderTraversal(Visitor visitor) const {
+    void inorder_traversal(Visitor visitor) const {
         inorder(root_, visitor);
     }
 };

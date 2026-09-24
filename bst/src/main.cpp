@@ -9,21 +9,21 @@
 #include <windows.h>
 #endif
 
-#include "BinaryTree.hpp"
+#include "binary_tree.hpp"
 
 namespace {
 
 // Символ считается частью слова, если это ASCII-буква/цифра, либо байт
 // многобайтовой UTF-8 последовательности (например, кириллица) — так слова
 // на кириллице не разбиваются посимвольно.
-bool isWordChar(unsigned char c) {
+bool is_word_char(unsigned char c) {
     return std::isalnum(c) != 0 || c >= 0x80;
 }
 
 // Приводит слово к нижнему регистру: ASCII — через tolower, кириллицу (UTF-8,
 // 2-байтовые последовательности U+0400-U+04FF) — вручную, т.к. tolower/locale
 // с многобайтовой UTF-8 кириллицей не работает без подключения <locale>.
-std::string toLowerWord(const std::string& word) {
+std::string to_lower_word(const std::string& word) {
     std::string result;
     result.reserve(word.size());
 
@@ -84,28 +84,28 @@ int main(int argc, char** argv) {
     std::string text = buffer.str();
 
     // Дерево строит статистику: ключ — слово, значение — количество вхождений.
-    BinaryTree<std::string, int> wordCounts;
-    std::size_t totalWords = 0;
+    binary_tree<std::string, int> word_counts;
+    std::size_t total_words = 0;
 
     std::size_t i = 0;
     while (i < text.size()) {
-        if (!isWordChar(static_cast<unsigned char>(text[i]))) {
+        if (!is_word_char(static_cast<unsigned char>(text[i]))) {
             ++i;
             continue;
         }
         std::size_t start = i;
-        while (i < text.size() && isWordChar(static_cast<unsigned char>(text[i]))) {
+        while (i < text.size() && is_word_char(static_cast<unsigned char>(text[i]))) {
             ++i;
         }
-        std::string word = toLowerWord(text.substr(start, i - start));
-        wordCounts[word] += 1;  // поиск существующего узла и вставка нового, если его не было
-        ++totalWords;
+        std::string word = to_lower_word(text.substr(start, i - start));
+        word_counts[word] += 1;  // поиск существующего узла и вставка нового, если его не было
+        ++total_words;
     }
 
-    std::cout << "\nВсего слов: " << totalWords << "\n";
-    std::cout << "Уникальных слов: " << wordCounts.size() << "\n\n";
+    std::cout << "\nВсего слов: " << total_words << "\n";
+    std::cout << "Уникальных слов: " << word_counts.size() << "\n\n";
     std::cout << "Частота слов (по алфавиту):\n";
-    wordCounts.inorderTraversal([](const std::string& word, const int& count) {
+    word_counts.inorder_traversal([](const std::string& word, const int& count) {
         std::cout << "  " << word << ": " << count << "\n";
     });
 
@@ -113,8 +113,8 @@ int main(int argc, char** argv) {
     std::string query;
     std::getline(std::cin, query);
     if (!query.empty()) {
-        std::string normalized = toLowerWord(query);
-        const int* count = wordCounts.find(normalized);
+        std::string normalized = to_lower_word(query);
+        const int* count = word_counts.find(normalized);
         if (count != nullptr) {
             std::cout << "\"" << normalized << "\" встречается " << *count << " раз\n";
         } else {

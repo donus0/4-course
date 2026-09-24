@@ -5,11 +5,11 @@
 #include <windows.h>
 #endif
 
-#include "DynamicArray.hpp"
-#include "InfixToPostfix.hpp"
-#include "PostfixEval.hpp"
+#include "dynamic_array.hpp"
+#include "infix_to_postfix.hpp"
+#include "postfix_eval.hpp"
 
-void printMenu() {
+void print_menu() {
     std::cout << "\n=== Постфиксное преобразование выражений (метод Дийкстры) ===\n"
               << "1. Инфикс -> постфикс (операнды любой длины), например: (var+12)*c-9/x^2\n"
               << "2. Вычислить постфиксное выражение (числа многозначные, через пробел), например: 12 3 4 * +\n"
@@ -17,14 +17,14 @@ void printMenu() {
               << "Выбор: ";
 }
 
-void handleConvert() {
+void handle_convert() {
     std::cout << "Введите инфиксное выражение: ";
     std::string infix;
     std::getline(std::cin, infix);
 
-    DynamicArray<std::string> operands;
+    dynamic_array<std::string> operands;
     try {
-        std::string postfix = infixToPostfix(infix, operands);
+        std::string postfix = infix_to_postfix(infix, operands);
         std::cout << "Постфиксная форма: " << postfix << "\n";
 
         std::cout << "Операнды (входной массив, отсортирован): ";
@@ -43,7 +43,7 @@ void handleConvert() {
     std::string query;
     std::getline(std::cin, query);
     if (!query.empty()) {
-        long index = operands.binarySearch(query);
+        long index = operands.binary_search(query);
         if (index >= 0) {
             std::cout << "Найдено: \"" << query << "\" на позиции " << index << "\n";
         } else {
@@ -52,12 +52,12 @@ void handleConvert() {
     }
 }
 
-void handleEvaluate() {
+void handle_evaluate() {
     std::cout << "Введите постфиксное выражение (токены через пробел): ";
     std::string postfix;
     std::getline(std::cin, postfix);
     try {
-        double result = evaluatePostfix(postfix);
+        double result = evaluate_postfix(postfix);
         std::cout << "Результат: " << result << "\n";
     } catch (const std::exception& e) {
         std::cout << "Ошибка: " << e.what() << "\n";
@@ -71,7 +71,7 @@ int main() {
 #endif
 
     while (true) {
-        printMenu();
+        print_menu();
         std::string choice;
         if (!std::getline(std::cin, choice)) {
             break;
@@ -80,9 +80,9 @@ int main() {
         if (choice == "0") {
             break;
         } else if (choice == "1") {
-            handleConvert();
+            handle_convert();
         } else if (choice == "2") {
-            handleEvaluate();
+            handle_evaluate();
         } else {
             std::cout << "Неверный выбор.\n";
         }
