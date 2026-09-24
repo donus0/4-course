@@ -23,6 +23,31 @@
       "command": "${workspaceFolder}/build/postfix/postfix/postfix.exe",
       "dependsOn": "cmake: build (postfix)",
       "problemMatcher": []
+    },
+    {
+      "label": "cmake: configure (bst)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/bst", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build (bst)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build/bst", "-j"],
+      "dependsOn": "cmake: configure (bst)",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: bst",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/bst/bst/bst.exe",
+      "options": {
+        "cwd": "${workspaceFolder}/bst"
+      },
+      "dependsOn": "cmake: build (bst)",
+      "problemMatcher": []
     }
   ]
 }

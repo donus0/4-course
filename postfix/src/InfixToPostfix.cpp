@@ -27,21 +27,32 @@ bool isOperator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
 }
 
-std::string infixToPostfix(const std::string& infix) {
+std::string infixToPostfix(const std::string& infix, DynamicArray<std::string>& operands) {
     Stack<char> operators;
     std::string postfix;
 
-    for (char c : infix) {
+    std::size_t i = 0;
+    while (i < infix.size()) {
+        char c = infix[i];
+
         if (std::isspace(static_cast<unsigned char>(c))) {
+            ++i;
             continue;
         }
 
-        if (std::isdigit(static_cast<unsigned char>(c))) {
-            // Числа однозначные, поэтому каждая цифра — отдельный операнд.
-            postfix += c;
+        if (std::isalnum(static_cast<unsigned char>(c))) {
+            // Операнд (переменная или число) может занимать несколько символов.
+            std::size_t start = i;
+            while (i < infix.size() && std::isalnum(static_cast<unsigned char>(infix[i]))) {
+                ++i;
+            }
+            std::string token = infix.substr(start, i - start);
+            operands.insertSorted(token);
+            postfix += token;
             postfix += ' ';
         } else if (c == '(') {
             operators.push(c);
+            ++i;
         } else if (c == ')') {
             bool matched = false;
             while (!operators.empty()) {
@@ -57,6 +68,7 @@ std::string infixToPostfix(const std::string& infix) {
             if (!matched) {
                 throw std::invalid_argument("Несогласованные скобки в выражении");
             }
+            ++i;
         } else if (isOperator(c)) {
             while (!operators.empty() && operators.top() != '(' &&
                    (precedence(operators.top()) > precedence(c) ||
@@ -66,6 +78,7 @@ std::string infixToPostfix(const std::string& infix) {
                 operators.pop();
             }
             operators.push(c);
+            ++i;
         } else {
             throw std::invalid_argument(std::string("Недопустимый символ во входном выражении: ") + c);
         }

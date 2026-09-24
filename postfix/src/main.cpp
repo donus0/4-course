@@ -5,12 +5,13 @@
 #include <windows.h>
 #endif
 
+#include "DynamicArray.hpp"
 #include "InfixToPostfix.hpp"
 #include "PostfixEval.hpp"
 
 void printMenu() {
     std::cout << "\n=== Постфиксное преобразование выражений (метод Дийкстры) ===\n"
-              << "1. Инфикс -> постфикс (числа однозначные), например: (1+2)*3-9/3^2\n"
+              << "1. Инфикс -> постфикс (операнды любой длины), например: (var+12)*c-9/x^2\n"
               << "2. Вычислить постфиксное выражение (числа многозначные, через пробел), например: 12 3 4 * +\n"
               << "0. Выход\n"
               << "Выбор: ";
@@ -20,11 +21,34 @@ void handleConvert() {
     std::cout << "Введите инфиксное выражение: ";
     std::string infix;
     std::getline(std::cin, infix);
+
+    DynamicArray<std::string> operands;
     try {
-        std::string postfix = infixToPostfix(infix);
+        std::string postfix = infixToPostfix(infix, operands);
         std::cout << "Постфиксная форма: " << postfix << "\n";
+
+        std::cout << "Операнды (входной массив, отсортирован): ";
+        for (std::size_t i = 0; i < operands.size(); ++i) {
+            std::cout << operands[i] << (i + 1 < operands.size() ? ", " : "\n");
+        }
+        if (operands.empty()) {
+            std::cout << "(нет)\n";
+        }
     } catch (const std::exception& e) {
         std::cout << "Ошибка: " << e.what() << "\n";
+        return;
+    }
+
+    std::cout << "Найти операнд дихотомическим поиском (пусто — пропустить): ";
+    std::string query;
+    std::getline(std::cin, query);
+    if (!query.empty()) {
+        long index = operands.binarySearch(query);
+        if (index >= 0) {
+            std::cout << "Найдено: \"" << query << "\" на позиции " << index << "\n";
+        } else {
+            std::cout << "\"" << query << "\" в выражении не встречается\n";
+        }
     }
 }
 
