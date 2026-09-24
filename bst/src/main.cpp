@@ -11,8 +11,6 @@
 
 #include "binary_tree.hpp"
 
-namespace {
-
 // Символ считается частью слова, если это ASCII-буква/цифра, либо байт
 // многобайтовой UTF-8 последовательности (например, кириллица) — так слова
 // на кириллице не разбиваются посимвольно.
@@ -53,8 +51,6 @@ std::string to_lower_word(const std::string& word) {
 
     return result;
 }
-
-}  // namespace
 
 int main(int argc, char** argv) {
 #ifdef _WIN32
