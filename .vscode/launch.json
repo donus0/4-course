@@ -38,6 +38,25 @@
           "ignoreFailures": true
         }
       ]
+    },
+    {
+      "name": "interpreter: debug",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/interpreter/interpreter/interpreter.exe",
+      "args": ["sample.txt"],
+      "cwd": "${workspaceFolder}/interpreter",
+      "console": "integratedTerminal",
+      "preLaunchTask": "cmake: build (interpreter)",
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/msys64/ucrt64/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     }
   ]
 }

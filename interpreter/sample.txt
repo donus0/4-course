@@ -1,0 +1,14 @@
+set a,10;
+set b,3;
+
+sum a,5;
+min a,2;
+mul a,2;
+div a,b;
+mod a,b;
+
+out a;
+
+inp x;
+mul x,x;
+out x;

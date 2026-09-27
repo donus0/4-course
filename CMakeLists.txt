@@ -8,3 +8,4 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(postfix)
 add_subdirectory(bst)
+add_subdirectory(interpreter)

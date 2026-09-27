@@ -48,6 +48,32 @@
       },
       "dependsOn": "cmake: build (bst)",
       "problemMatcher": []
+    },
+    {
+      "label": "cmake: configure (interpreter)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/interpreter", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build (interpreter)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build/interpreter", "-j"],
+      "dependsOn": "cmake: configure (interpreter)",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: interpreter",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/interpreter/interpreter/interpreter.exe",
+      "args": ["sample.txt"],
+      "options": {
+        "cwd": "${workspaceFolder}/interpreter"
+      },
+      "dependsOn": "cmake: build (interpreter)",
+      "problemMatcher": []
     }
   ]
 }
