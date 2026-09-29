@@ -1,4 +1,6 @@
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -7,16 +9,28 @@
 #endif
 
 #include "interpreter.hpp"
-#include "lexer.hpp"
+
+// Читает весь файл в одну строку
+std::string read_file(const std::string& path) {
+    std::ifstream file(path);
+    if (!file) {
+        throw std::runtime_error("не удалось открыть файл: " + path);
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 
 int main(int argc, char** argv) {
 #ifdef _WIN32
+    // Чтобы русские сообщения нормально выводились в консоли Windows
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
 
     if (argc != 2) {
-        std::cerr << "Использование: " << (argc > 0 ? argv[0] : "interpreter") << " <файл программы>\n";
+        std::cerr << "Использование: interpreter <файл программы>\n";
         return 1;
     }
 

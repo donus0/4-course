@@ -11,19 +11,19 @@
 //   "mul x,y;"    x = x * y
 //   "div x,y;"    x = x / y          (целочисленное деление)
 //   "mod x,y;"    x = x % y          (остаток от деления)
-//   "inp x;"      x = <число с stdin>
+//   "inp x;"      x = <число с клавиатуры>
 //   "out x;"      вывод значения x (число или переменная) и перевод строки
 
-[[noreturn]] static void fail(int line, const std::string& message) {
-    throw std::runtime_error("Ошибка выполнения (строка " + std::to_string(line) + "): " + message);
-}
-
-static bool is_integer_literal(const std::string& s) {
-    std::size_t i = (!s.empty() && s[0] == '-') ? 1 : 0;
-    if (i == s.size()) {
+// Проверяет, что строка — целое число, например "42" или "-7"
+bool is_number(const std::string& s) {
+    std::size_t start = 0;
+    if (!s.empty() && s[0] == '-') {
+        start = 1;
+    }
+    if (start == s.size()) {
         return false;
     }
-    for (; i < s.size(); ++i) {
+    for (std::size_t i = start; i < s.size(); i++) {
         if (!std::isdigit(static_cast<unsigned char>(s[i]))) {
             return false;
         }
@@ -31,124 +31,142 @@ static bool is_integer_literal(const std::string& s) {
     return true;
 }
 
-static void expect_arg_count(const statement& st, std::size_t expected) {
-    if (st.args.size() != expected) {
-        fail(st.line, "операция '" + st.op + "' ожидает " + std::to_string(expected) +
+// Заполняем таблицу операций. [this] нужен, чтобы внутри лямбды
+// можно было вызвать метод этого объекта (op_set, op_sum, ...).
+interpreter::interpreter() {
+    _operations["set"] = [this](const statement& st) { op_set(st); };
+    _operations["sum"] = [this](const statement& st) { op_sum(st); };
+    _operations["min"] = [this](const statement& st) { op_min(st); };
+    _operations["mul"] = [this](const statement& st) { op_mul(st); };
+    _operations["div"] = [this](const statement& st) { op_div(st); };
+    _operations["mod"] = [this](const statement& st) { op_mod(st); };
+    _operations["inp"] = [this](const statement& st) { op_inp(st); };
+    _operations["out"] = [this](const statement& st) { op_out(st); };
+}
+
+void interpreter::error(int line, const std::string& message) const {
+    throw std::runtime_error("Ошибка выполнения (строка " + std::to_string(line) + "): " + message);
+}
+
+void interpreter::check_args_count(const statement& st, std::size_t count) const {
+    if (st.args.size() != count) {
+        error(st.line, "операция '" + st.op + "' ожидает " + std::to_string(count) +
                            " аргумент(ов), получено " + std::to_string(st.args.size()));
     }
 }
 
-static void expect_identifier(const std::string& arg, int line) {
-    if (is_integer_literal(arg) || arg.empty()) {
-        fail(line, "ожидалось имя переменной, получено '" + arg + "'");
+// Первый аргумент set/sum/... должен быть переменной, а не числом
+void interpreter::check_is_variable(const std::string& arg, int line) const {
+    if (arg.empty() || is_number(arg)) {
+        error(line, "ожидалось имя переменной, получено '" + arg + "'");
     }
 }
 
-long long interpreter::resolve(const std::string& arg, int line) const {
-    if (is_integer_literal(arg)) {
+// Если аргумент — число, возвращает его, иначе значение переменной
+long long interpreter::get_value(const std::string& arg, int line) const {
+    if (is_number(arg)) {
         return std::stoll(arg);
     }
-
-    auto it = vars_.find(arg);
-    if (it == vars_.end()) {
-        fail(line, "переменная '" + arg + "' не определена");
+    if (_vars.count(arg) == 0) {
+        error(line, "переменная '" + arg + "' не определена");
     }
-    return it->second;
-}
-
-void interpreter::exec_binary(const statement& st, long long (*compute)(long long, long long, int)) {
-    expect_arg_count(st, 2);
-    expect_identifier(st.args[0], st.line);
-
-    long long lhs = resolve(st.args[0], st.line);
-    long long rhs = resolve(st.args[1], st.line);
-    vars_[st.args[0]] = compute(lhs, rhs, st.line);
+    return _vars.at(arg);
 }
 
 void interpreter::op_set(const statement& st) {
-    expect_arg_count(st, 2);
-    expect_identifier(st.args[0], st.line);
-    vars_[st.args[0]] = resolve(st.args[1], st.line);
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+    _vars[st.args[0]] = get_value(st.args[1], st.line);
 }
 
 void interpreter::op_sum(const statement& st) {
-    exec_binary(st, [](long long a, long long b, int) { return a + b; });
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a + b;
 }
 
 void interpreter::op_min(const statement& st) {
-    exec_binary(st, [](long long a, long long b, int) { return a - b; });
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a - b;
 }
 
 void interpreter::op_mul(const statement& st) {
-    exec_binary(st, [](long long a, long long b, int) { return a * b; });
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a * b;
 }
 
 void interpreter::op_div(const statement& st) {
-    exec_binary(st, [](long long a, long long b, int line) -> long long {
-        if (b == 0) {
-            fail(line, "деление на ноль");
-        }
-        return a / b;
-    });
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    if (b == 0) {
+        error(st.line, "деление на ноль");
+    }
+    _vars[st.args[0]] = a / b;
 }
 
 void interpreter::op_mod(const statement& st) {
-    exec_binary(st, [](long long a, long long b, int line) -> long long {
-        if (b == 0) {
-            fail(line, "деление на ноль");
-        }
-        return a % b;
-    });
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    if (b == 0) {
+        error(st.line, "деление на ноль");
+    }
+    _vars[st.args[0]] = a % b;
 }
 
 void interpreter::op_inp(const statement& st) {
-    expect_arg_count(st, 1);
-    expect_identifier(st.args[0], st.line);
+    check_args_count(st, 1);
+    check_is_variable(st.args[0], st.line);
 
     std::string line;
     if (!std::getline(std::cin, line)) {
-        fail(st.line, "не удалось прочитать целое число со стандартного ввода");
+        error(st.line, "не удалось прочитать целое число с клавиатуры");
     }
+    // Убираем перевод строки, который мог остаться в конце
     while (!line.empty() && (line.back() == '\r' || line.back() == '\n')) {
         line.pop_back();
     }
-    if (!is_integer_literal(line)) {
-        fail(st.line, "ожидалось целое число, получено '" + line + "'");
+    if (!is_number(line)) {
+        error(st.line, "ожидалось целое число, получено '" + line + "'");
     }
 
-    vars_[st.args[0]] = std::stoll(line);
+    _vars[st.args[0]] = std::stoll(line);
 }
 
 void interpreter::op_out(const statement& st) {
-    expect_arg_count(st, 1);
-    std::cout << resolve(st.args[0], st.line) << "\n";
+    check_args_count(st, 1);
+    std::cout << get_value(st.args[0], st.line) << "\n";
 }
 
-const std::unordered_map<std::string, interpreter::handler_t> interpreter::handlers_ = {
-    {"set", &interpreter::op_set},
-    {"sum", &interpreter::op_sum},
-    {"min", &interpreter::op_min},
-    {"mul", &interpreter::op_mul},
-    {"div", &interpreter::op_div},
-    {"mod", &interpreter::op_mod},
-    {"inp", &interpreter::op_inp},
-    {"out", &interpreter::op_out},
-};
-
-void interpreter::exec(const statement& st) {
-    auto it = handlers_.find(st.op);
-    if (it == handlers_.end()) {
-        fail(st.line, "неизвестная операция '" + st.op + "'");
+void interpreter::execute(const statement& st) {
+    if (_operations.count(st.op) == 0) {
+        error(st.line, "неизвестная операция '" + st.op + "'");
     }
-    (this->*(it->second))(st);
+    // Достаём функцию по имени операции и сразу вызываем её
+    _operations.at(st.op)(st);
 }
 
 void interpreter::run(const std::string& source) {
-    std::size_t pos = 0;
-    int line = 1;
+    lexer lex(source);
     statement st;
 
-    while (next_statement(source, pos, line, st)) {
-        exec(st);
+    while (lex.next(st)) {
+        execute(st);
     }
 }

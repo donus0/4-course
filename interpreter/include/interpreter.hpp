@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 #include <unordered_map>
 
@@ -7,15 +8,18 @@
 
 class interpreter {
 private:
-    using handler_t = void (interpreter::*)(const statement&);
+    // Значения переменных: имя -> число
+    std::unordered_map<std::string, long long> _vars;
 
-    std::unordered_map<std::string, long long> vars_;
+    // Имя операции в тексте программы -> функция, которая её выполняет
+    std::unordered_map<std::string, std::function<void(const statement&)>> _operations;
 
-    long long resolve(const std::string& arg, int line) const;
-    void exec(const statement& st);
+    void error(int line, const std::string& message) const;
+    void check_args_count(const statement& st, std::size_t count) const;
+    void check_is_variable(const std::string& arg, int line) const;
+    long long get_value(const std::string& arg, int line) const;
 
-    void exec_binary(const statement& st, long long (*compute)(long long lhs, long long rhs, int line));
-
+    void execute(const statement& st);
     void op_set(const statement& st);
     void op_sum(const statement& st);
     void op_min(const statement& st);
@@ -25,8 +29,8 @@ private:
     void op_inp(const statement& st);
     void op_out(const statement& st);
 
-    static const std::unordered_map<std::string, handler_t> handlers_;
-
 public:
+    interpreter();
+
     void run(const std::string& source);
 };
