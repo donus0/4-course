@@ -74,6 +74,28 @@
       },
       "dependsOn": "cmake: build (interpreter)",
       "problemMatcher": []
+    },
+    {
+      "label": "cmake: configure (expr_tree)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/expr_tree", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build (expr_tree)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build/expr_tree", "-j"],
+      "dependsOn": "cmake: configure (expr_tree)",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: expr_tree",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/expr_tree/expr_tree/expr_tree.exe",
+      "dependsOn": "cmake: build (expr_tree)",
+      "problemMatcher": []
     }
   ]
 }
