@@ -16,6 +16,7 @@
 //   "xor x,y;"    x = x ^ y          (побитовое исключающее ИЛИ)
 //   "shl x,y;"    x = x << y         (сдвиг влево, 0 <= y < 64)
 //   "shr x,y;"    x = x >> y         (сдвиг вправо, 0 <= y < 64)
+//   "cmp x,y;"    x = -1, если x < y; 0, если x == y; 1, если x > y
 //   "inp x;"      x = <число с клавиатуры>
 //   "out x;"      вывод значения x (число или переменная) и перевод строки
 
@@ -50,6 +51,7 @@ interpreter::interpreter() {
     _operations["xor"] = [this](const statement& st) { op_xor(st); };
     _operations["shl"] = [this](const statement& st) { op_shl(st); };
     _operations["shr"] = [this](const statement& st) { op_shr(st); };
+    _operations["cmp"] = [this](const statement& st) { op_cmp(st); };
     _operations["inp"] = [this](const statement& st) { op_inp(st); };
     _operations["out"] = [this](const statement& st) { op_out(st); };
 }
@@ -192,6 +194,21 @@ void interpreter::op_shr(const statement& st) {
         error(st.line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
     }
     _vars[st.args[0]] = a >> b;
+}
+
+void interpreter::op_cmp(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    if (a < b) {
+        _vars[st.args[0]] = -1;
+    } else if (a == b) {
+        _vars[st.args[0]] = 0;
+    } else {
+        _vars[st.args[0]] = 1;
+    }
 }
 
 void interpreter::op_inp(const statement& st) {

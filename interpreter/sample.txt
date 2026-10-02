@@ -9,6 +9,38 @@ mod a,b;
 
 out a;
 
+set c,12;
+and c,10;
+out c;
+
+set c,12;
+or c,3;
+out c;
+
+set c,12;
+xor c,10;
+out c;
+
+set c,1;
+shl c,10;
+out c;
+
+set c,1024;
+shr c,3;
+out c;
+
+set c,a;
+cmp c,b;
+out c;
+
+set c,b;
+cmp c,3;
+out c;
+
+set c,10;
+cmp c,b;
+out c;
+
 inp x;
 mul x,x;
 out x;

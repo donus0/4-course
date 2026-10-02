@@ -38,7 +38,7 @@ std::string lexer::read_op() {
         _pos++;
     }
     if (result.empty()) {
-        error("ожидалось имя операции (set sum min mul div mod and or xor shl shr inp out)");
+        error("ожидалось имя операции (set sum min mul div mod and or xor shl shr cmp inp out)");
     }
     return result;
 }
