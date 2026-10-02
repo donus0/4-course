@@ -26,6 +26,11 @@ private:
     void op_mul(const statement& st);
     void op_div(const statement& st);
     void op_mod(const statement& st);
+    void op_and(const statement& st);
+    void op_or(const statement& st);
+    void op_xor(const statement& st);
+    void op_shl(const statement& st);
+    void op_shr(const statement& st);
     void op_inp(const statement& st);
     void op_out(const statement& st);
 

@@ -11,6 +11,11 @@
 //   "mul x,y;"    x = x * y
 //   "div x,y;"    x = x / y          (целочисленное деление)
 //   "mod x,y;"    x = x % y          (остаток от деления)
+//   "and x,y;"    x = x & y          (побитовое И)
+//   "or x,y;"     x = x | y          (побитовое ИЛИ)
+//   "xor x,y;"    x = x ^ y          (побитовое исключающее ИЛИ)
+//   "shl x,y;"    x = x << y         (сдвиг влево, 0 <= y < 64)
+//   "shr x,y;"    x = x >> y         (сдвиг вправо, 0 <= y < 64)
 //   "inp x;"      x = <число с клавиатуры>
 //   "out x;"      вывод значения x (число или переменная) и перевод строки
 
@@ -40,6 +45,11 @@ interpreter::interpreter() {
     _operations["mul"] = [this](const statement& st) { op_mul(st); };
     _operations["div"] = [this](const statement& st) { op_div(st); };
     _operations["mod"] = [this](const statement& st) { op_mod(st); };
+    _operations["and"] = [this](const statement& st) { op_and(st); };
+    _operations["or"] = [this](const statement& st) { op_or(st); };
+    _operations["xor"] = [this](const statement& st) { op_xor(st); };
+    _operations["shl"] = [this](const statement& st) { op_shl(st); };
+    _operations["shr"] = [this](const statement& st) { op_shr(st); };
     _operations["inp"] = [this](const statement& st) { op_inp(st); };
     _operations["out"] = [this](const statement& st) { op_out(st); };
 }
@@ -128,6 +138,60 @@ void interpreter::op_mod(const statement& st) {
         error(st.line, "деление на ноль");
     }
     _vars[st.args[0]] = a % b;
+}
+
+void interpreter::op_and(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a & b;
+}
+
+void interpreter::op_or(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a | b;
+}
+
+void interpreter::op_xor(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    _vars[st.args[0]] = a ^ b;
+}
+
+// Сдвиг на отрицательное число или на >= 64 бит в C++ — неопределённое
+// поведение, поэтому такой сдвиг считаем ошибкой
+void interpreter::op_shl(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    if (b < 0 || b >= 64) {
+        error(st.line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
+    }
+    // Сдвиг через unsigned, чтобы сдвиг отрицательного числа влево был определён
+    _vars[st.args[0]] = static_cast<long long>(static_cast<unsigned long long>(a) << b);
+}
+
+void interpreter::op_shr(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    long long a = get_value(st.args[0], st.line);
+    long long b = get_value(st.args[1], st.line);
+    if (b < 0 || b >= 64) {
+        error(st.line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
+    }
+    _vars[st.args[0]] = a >> b;
 }
 
 void interpreter::op_inp(const statement& st) {
