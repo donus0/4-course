@@ -38,7 +38,7 @@ std::string lexer::read_op() {
         _pos++;
     }
     if (result.empty()) {
-        error("ожидалось имя операции (set sum min mul div mod and or xor shl shr cmp inp out)");
+        error("ожидалось имя операции (set sum min mul div mod and or xor shl shr cmp exp inp out)");
     }
     return result;
 }
@@ -75,6 +75,26 @@ std::string lexer::read_arg() {
     return result;
 }
 
+// Выражение для команды exp: весь текст до ';', например "(a+b)*c".
+// Его синтаксис проверяется уже при переводе в постфиксную запись.
+std::string lexer::read_expr() {
+    std::string result;
+    while (current() != ';' && current() != '\0') {
+        if (current() == '\n') {
+            _line++;
+        }
+        result += current();
+        _pos++;
+    }
+    while (!result.empty() && std::isspace(static_cast<unsigned char>(result.back()))) {
+        result.pop_back();
+    }
+    if (result.empty()) {
+        error("ожидалось выражение");
+    }
+    return result;
+}
+
 bool lexer::next(statement& st) {
     skip_spaces();
     if (_pos >= _source.size()) {
@@ -98,7 +118,12 @@ bool lexer::next(statement& st) {
         while (current() == ',') {
             _pos++;
             skip_spaces();
-            st.args.push_back(read_arg());
+            // У exp второй аргумент — выражение, а не просто число или переменная
+            if (st.op == "exp" && st.args.size() == 1) {
+                st.args.push_back(read_expr());
+            } else {
+                st.args.push_back(read_arg());
+            }
             skip_spaces();
         }
     }

@@ -41,6 +41,12 @@ set c,10;
 cmp c,b;
 out c;
 
+exp c,(a+b)*c-b%2;
+out c;
+
+exp c,-(c+1)/3;
+out c;
+
 inp x;
 mul x,x;
 out x;

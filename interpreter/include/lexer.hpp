@@ -22,6 +22,7 @@ private:
     void skip_spaces();
     std::string read_op();
     std::string read_arg();
+    std::string read_expr();
 
 public:
     lexer(const std::string& source);

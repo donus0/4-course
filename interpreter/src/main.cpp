@@ -29,15 +29,31 @@ int main(int argc, char** argv) {
     SetConsoleCP(CP_UTF8);
 #endif
 
-    if (argc != 2) {
-        std::cerr << "Использование: interpreter <файл программы>\n";
+    // Флаг -d (трассировка) можно указать до или после имени файла
+    bool debug = false;
+    std::string path;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-d") {
+            debug = true;
+        } else if (path.empty()) {
+            path = arg;
+        } else {
+            path.clear();
+            break;
+        }
+    }
+
+    if (path.empty()) {
+        std::cerr << "Использование: interpreter [-d] <файл программы>\n"
+                  << "  -d  трассировка перевода выражений exp в постфиксную запись\n";
         return 1;
     }
 
     try {
-        std::string source = read_file(argv[1]);
+        std::string source = read_file(path);
 
-        interpreter interp;
+        interpreter interp(debug);
         interp.run(source);
     } catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

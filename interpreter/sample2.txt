@@ -1,0 +1,8 @@
+set a,7;
+set c,6;
+set b,5;
+set d,3;
+set e,2;
+
+exp output,((c+5)*b+1)/(a-(d*e)*b);
+out output;

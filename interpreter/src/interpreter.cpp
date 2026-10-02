@@ -1,5 +1,7 @@
 #include "interpreter.hpp"
+#include "expression.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <stdexcept>
@@ -17,6 +19,7 @@
 //   "shl x,y;"    x = x << y         (сдвиг влево, 0 <= y < 64)
 //   "shr x,y;"    x = x >> y         (сдвиг вправо, 0 <= y < 64)
 //   "cmp x,y;"    x = -1, если x < y; 0, если x == y; 1, если x > y
+//   "exp x,e;"    x = значение выражения e, например "exp x,(a+b)*-c%7;"
 //   "inp x;"      x = <число с клавиатуры>
 //   "out x;"      вывод значения x (число или переменная) и перевод строки
 
@@ -39,7 +42,7 @@ bool is_number(const std::string& s) {
 
 // Заполняем таблицу операций. [this] нужен, чтобы внутри лямбды
 // можно было вызвать метод этого объекта (op_set, op_sum, ...).
-interpreter::interpreter() {
+interpreter::interpreter(bool debug) : _debug(debug) {
     _operations["set"] = [this](const statement& st) { op_set(st); };
     _operations["sum"] = [this](const statement& st) { op_sum(st); };
     _operations["min"] = [this](const statement& st) { op_min(st); };
@@ -52,6 +55,7 @@ interpreter::interpreter() {
     _operations["shl"] = [this](const statement& st) { op_shl(st); };
     _operations["shr"] = [this](const statement& st) { op_shr(st); };
     _operations["cmp"] = [this](const statement& st) { op_cmp(st); };
+    _operations["exp"] = [this](const statement& st) { op_exp(st); };
     _operations["inp"] = [this](const statement& st) { op_inp(st); };
     _operations["out"] = [this](const statement& st) { op_out(st); };
 }
@@ -208,6 +212,43 @@ void interpreter::op_cmp(const statement& st) {
         _vars[st.args[0]] = 0;
     } else {
         _vars[st.args[0]] = 1;
+    }
+}
+
+// Выражение переводится в постфиксную запись, затем в обычные команды
+// (set/sum/min/...), которые сразу выполняются. Временные переменные
+// ($1, $2, ...) после вычисления удаляются.
+void interpreter::op_exp(const statement& st) {
+    check_args_count(st, 2);
+    check_is_variable(st.args[0], st.line);
+
+    if (_debug) {
+        std::cout << "[трассировка] строка " << st.line << ": exp " << st.args[0] << "," << st.args[1]
+                  << "\n  (~ — унарный минус)\n";
+    }
+
+    std::vector<std::string> postfix = infix_to_postfix(st.args[1], st.line, _debug);
+    std::vector<statement> commands = postfix_to_commands(postfix, st.args[0], st.line);
+
+    if (_debug) {
+        std::cout << "  постфикс: " << postfix_to_string(postfix) << "\n  команды:\n";
+    }
+    for (const statement& command : commands) {
+        execute(command);
+        if (_debug) {
+            const std::string& target = command.args[0];
+            std::string text = command.op + " " + target + "," + command.args[1] + ";";
+            text.resize(std::max<std::size_t>(text.size() + 2, 16), ' ');
+            std::cout << "    " << text << target << " = " << _vars.at(target) << "\n";
+        }
+    }
+
+    for (auto it = _vars.begin(); it != _vars.end();) {
+        if (it->first[0] == '$') {
+            it = _vars.erase(it);
+        } else {
+            ++it;
+        }
     }
 }
 

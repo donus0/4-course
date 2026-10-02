@@ -14,6 +14,9 @@ private:
     // Имя операции в тексте программы -> функция, которая её выполняет
     std::unordered_map<std::string, std::function<void(const statement&)>> _operations;
 
+    // Режим трассировки (флаг -d): exp печатает перевод выражения в постфикс
+    bool _debug;
+
     void error(int line, const std::string& message) const;
     void check_args_count(const statement& st, std::size_t count) const;
     void check_is_variable(const std::string& arg, int line) const;
@@ -32,11 +35,12 @@ private:
     void op_shl(const statement& st);
     void op_shr(const statement& st);
     void op_cmp(const statement& st);
+    void op_exp(const statement& st);
     void op_inp(const statement& st);
     void op_out(const statement& st);
 
 public:
-    interpreter();
+    interpreter(bool debug = false);
 
     void run(const std::string& source);
 };
