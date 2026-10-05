@@ -56,7 +56,7 @@ std::string lexer::read_while(bool (*condition)(char)) {
 std::string lexer::read_op() {
     std::string result = read_while(is_letter);
     if (result.empty()) {
-        error("ожидалось имя операции (set sum min mul div mod and or xor shl shr cmp exp inp out)");
+        error("ожидалось имя операции (set sum min mul div mod and or xor not shl shr cmp exp inp out)");
     }
     return result;
 }

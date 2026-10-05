@@ -34,6 +34,7 @@ interpreter::interpreter(bool debug) {
     _operations["and"] = &interpreter::op_and;
     _operations["or"] = &interpreter::op_or;
     _operations["xor"] = &interpreter::op_xor;
+    _operations["not"] = &interpreter::op_not;
     _operations["shl"] = &interpreter::op_shl;
     _operations["shr"] = &interpreter::op_shr;
     _operations["cmp"] = &interpreter::op_cmp;
@@ -141,6 +142,12 @@ void interpreter::op_xor(const statement& st) {
     long long a, b;
     read_operands(st, a, b);
     _vars[st.args[0]] = a ^ b;
+}
+
+// Побитовое НЕ: "not x;" -> x = ~x
+void interpreter::op_not(const statement& st) {
+    check_command(st, 1);
+    _vars[st.args[0]] = ~get_value(st.args[0], st.line);
 }
 
 void interpreter::op_shl(const statement& st) {

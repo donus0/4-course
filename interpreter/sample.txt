@@ -21,6 +21,10 @@ set c,12;
 xor c,10;
 out c;
 
+set c,5;
+not c;
+out c;
+
 set c,1;
 shl c,10;
 out c;
