@@ -6,6 +6,7 @@
 #include <set>
 #include <stack>
 #include <stdexcept>
+#include <utility>
 
 // Алгоритм построения (два стека, как в методе Дийкстры):
 //   - операнд сразу превращаем в лист и кладём в стек поддеревьев;
@@ -45,34 +46,75 @@ void syntax_error(const std::string& message, std::size_t pos) {
     throw std::invalid_argument("Ошибка в позиции " + std::to_string(pos + 1) + ": " + message);
 }
 
-void destroy(tree_node* n) {
-    if (n == nullptr) {
-        return;
+expression_tree::node::node(char v, node* l, node* r) : value(v), left(l), right(r) {}
+
+expression_tree::node::node(const node& other) : value(other.value), left(nullptr), right(nullptr) {
+    try {
+        if (other.left != nullptr) {
+            left = new node(*other.left);
+        }
+        if (other.right != nullptr) {
+            right = new node(*other.right);
+        }
+    } catch (...) {
+        delete left;
+        throw;
     }
-    destroy(n->left);
-    destroy(n->right);
-    delete n;
 }
 
-void make_node(std::stack<char>& ops, std::stack<tree_node*>& nodes) {
-    char op = ops.top();
+expression_tree::node::node(node&& other) noexcept
+    : value(other.value), left(other.left), right(other.right) {
+    other.left = nullptr;
+    other.right = nullptr;
+}
+
+expression_tree::node& expression_tree::node::operator=(const node& other) {
+    if (this != &other) {
+        node copy(other);
+        swap(copy);
+    }
+    return *this;
+}
+
+expression_tree::node& expression_tree::node::operator=(node&& other) noexcept {
+    if (this != &other) {
+        node temp(std::move(other));
+        swap(temp);
+    }
+    return *this;
+}
+
+expression_tree::node::~node() {
+    delete left;
+    delete right;
+}
+
+void expression_tree::node::swap(node& other) noexcept {
+    std::swap(value, other.value);
+    std::swap(left, other.left);
+    std::swap(right, other.right);
+}
+
+
+void expression_tree::make_node(std::stack<char>& ops, std::stack<node*>& nodes) {
+    // Узел создаём до того, как снимать поддеревья со стека: если new бросит
+    // исключение, поддеревья останутся в стеке и build их удалит
+    node* parent = new node(ops.top());
     ops.pop();
 
     // Правый операнд лежит выше левого, т.к. был добавлен позже
-    tree_node* right = nodes.top();
+    parent->right = nodes.top();
     nodes.pop();
-    tree_node* left = nodes.top();
+    parent->left = nodes.top();
     nodes.pop();
 
-    nodes.push(new tree_node(op, left, right));
+    nodes.push(parent);
 }
 
-tree_node* build(const std::string& expression) {
+expression_tree::node* expression_tree::build(const std::string& expression) {
     std::stack<char> ops;
-    std::stack<tree_node*> nodes;
+    std::stack<node*> nodes;
 
-    // true — сейчас ждём операнд или '(', false — операцию или ')'.
-    // Благодаря этому флагу в make_node в стеке всегда есть два поддерева
     bool expect_operand = true;
 
     try {
@@ -87,7 +129,7 @@ tree_node* build(const std::string& expression) {
                 if (!expect_operand) {
                     syntax_error("два операнда подряд (операнд — одна цифра или буква)", i);
                 }
-                nodes.push(new tree_node(c));
+                nodes.push(new node(c));
                 expect_operand = false;
             } else if (c == '(') {
                 if (!expect_operand) {
@@ -138,7 +180,7 @@ tree_node* build(const std::string& expression) {
     } catch (...) {
         // Если выражение с ошибкой — удаляем уже созданные узлы, чтобы не было утечки
         while (!nodes.empty()) {
-            destroy(nodes.top());
+            delete nodes.top();  // деструктор узла удалит и всё его поддерево
             nodes.pop();
         }
         throw;
@@ -151,13 +193,35 @@ expression_tree::expression_tree(const std::string& expression) {
     _root = build(expression);
 }
 
-expression_tree::~expression_tree() {
-    destroy(_root);
+expression_tree::expression_tree(const expression_tree& other)
+    : _root(other._root != nullptr ? new node(*other._root) : nullptr) {}
+
+expression_tree::expression_tree(expression_tree&& other) noexcept : _root(other._root) {
+    other._root = nullptr;
 }
 
-// Сначала правое поддерево, потом узел, потом левое — тогда при повороте
-// картинки на 90 градусов по часовой стрелке получится обычное дерево
-void print_node(const tree_node* n, int depth) {
+expression_tree& expression_tree::operator=(const expression_tree& other) {
+    if (this != &other) {
+        expression_tree copy(other);
+        std::swap(_root, copy._root);
+    }
+    return *this;
+}
+
+expression_tree& expression_tree::operator=(expression_tree&& other) noexcept {
+    if (this != &other) {
+        delete _root;
+        _root = other._root;
+        other._root = nullptr;
+    }
+    return *this;
+}
+
+expression_tree::~expression_tree() {
+    delete _root;
+}
+
+void expression_tree::print_node(const node* n, int depth) {
     if (n == nullptr) {
         return;
     }
@@ -170,8 +234,7 @@ void expression_tree::print() const {
     print_node(_root, 0);
 }
 
-// Прямой обход: узел, левое, правое
-void prefix_walk(const tree_node* n, std::string& result) {
+void expression_tree::prefix_walk(const node* n, std::string& result) {
     if (n == nullptr) {
         return;
     }
@@ -181,8 +244,7 @@ void prefix_walk(const tree_node* n, std::string& result) {
     prefix_walk(n->right, result);
 }
 
-// Обратный обход: левое, правое, узел
-void postfix_walk(const tree_node* n, std::string& result) {
+void expression_tree::postfix_walk(const node* n, std::string& result) {
     if (n == nullptr) {
         return;
     }
@@ -192,9 +254,7 @@ void postfix_walk(const tree_node* n, std::string& result) {
     result += ' ';
 }
 
-// Симметричный обход: левое, узел, правое. Каждую операцию берём в скобки,
-// иначе из дерева нельзя восстановить порядок действий
-std::string infix_walk(const tree_node* n) {
+std::string expression_tree::infix_walk(const node* n) {
     if (n->left == nullptr) {
         return std::string(1, n->value);
     }
@@ -204,27 +264,33 @@ std::string infix_walk(const tree_node* n) {
 std::string expression_tree::prefix() const {
     std::string result;
     prefix_walk(_root, result);
-    result.pop_back();  // лишний пробел в конце
+    if (!result.empty()) {
+        result.pop_back();  // лишний пробел в конце
+    }
     return result;
 }
 
 std::string expression_tree::postfix() const {
     std::string result;
     postfix_walk(_root, result);
-    result.pop_back();
+    if (!result.empty()) {
+        result.pop_back();
+    }
     return result;
 }
 
 std::string expression_tree::infix() const {
+    if (_root == nullptr) {
+        return "";
+    }
     std::string result = infix_walk(_root);
-    // Внешние скобки вокруг всего выражения не нужны
     if (_root->left != nullptr) {
         result = result.substr(1, result.size() - 2);
     }
     return result;
 }
 
-void collect_variables(const tree_node* n, std::set<char>& vars) {
+void expression_tree::collect_variables(const node* n, std::set<char>& vars) {
     if (n == nullptr) {
         return;
     }
@@ -241,7 +307,7 @@ std::string expression_tree::variables() const {
     return std::string(vars.begin(), vars.end());
 }
 
-double evaluate_node(const tree_node* n, const std::map<char, double>& values) {
+double expression_tree::evaluate_node(const node* n, const std::map<char, double>& values) {
     // Лист — это операнд
     if (n->left == nullptr) {
         if (std::isdigit(static_cast<unsigned char>(n->value))) {
@@ -277,5 +343,8 @@ double evaluate_node(const tree_node* n, const std::map<char, double>& values) {
 }
 
 double expression_tree::evaluate(const std::map<char, double>& values) const {
+    if (_root == nullptr) {
+        throw std::logic_error("Дерево пустое (было перемещено)");
+    }
     return evaluate_node(_root, values);
 }

@@ -1,43 +1,57 @@
 #pragma once
 
 #include <map>
+#include <set>
+#include <stack>
 #include <string>
 
-// Узел дерева выражения. В листьях лежат операнды (цифра или буква),
-// во внутренних узлах — операции + - * / ^
-struct tree_node {
-    char value;
-    tree_node* left;
-    tree_node* right;
-
-    tree_node(char v, tree_node* l = nullptr, tree_node* r = nullptr)
-        : value(v), left(l), right(r) {}
-};
-
-class expression_tree {
+class expression_tree final {
 private:
-    tree_node* _root;
+    struct node final {
+        char value;
+        node* left;
+        node* right;
+
+        node(char v, node* l = nullptr, node* r = nullptr);
+
+        node(const node& other);                 
+        node(node&& other) noexcept;             
+        node& operator=(const node& other);      
+        node& operator=(node&& other) noexcept;  
+        ~node();                                 
+
+        void swap(node& other) noexcept;
+    };
+
+    node* _root;
+
+    static node* build(const std::string& expression);
+    static void make_node(std::stack<char>& ops, std::stack<node*>& nodes);
+
+    static void print_node(const node* n, int depth);
+    static void prefix_walk(const node* n, std::string& result);
+    static void postfix_walk(const node* n, std::string& result);
+    static std::string infix_walk(const node* n);
+    static void collect_variables(const node* n, std::set<char>& vars);
+    static double evaluate_node(const node* n, const std::map<char, double>& values);
 
 public:
     // Строит дерево по инфиксной записи, например "(a+3)*b-5/c".
-    // Если выражение записано с ошибкой, бросает std::invalid_argument
     expression_tree(const std::string& expression);
-    ~expression_tree();
 
-    // Копировать дерево не нужно, а копия по умолчанию удалила бы узлы дважды
-    expression_tree(const expression_tree&) = delete;
-    expression_tree& operator=(const expression_tree&) = delete;
+    expression_tree(const expression_tree& other);                 
+    expression_tree(expression_tree&& other) noexcept;             
+    expression_tree& operator=(const expression_tree& other);      
+    expression_tree& operator=(expression_tree&& other) noexcept;  
+    ~expression_tree();                                            
 
-    // Печать дерева, повёрнутого на 90 градусов (корень слева)
     void print() const;
 
     std::string prefix() const;
     std::string infix() const;
     std::string postfix() const;
 
-    // Буквы-переменные из выражения, без повторов и по алфавиту
     std::string variables() const;
 
-    // Вычисляет выражение, значения переменных берутся из values
     double evaluate(const std::map<char, double>& values) const;
 };

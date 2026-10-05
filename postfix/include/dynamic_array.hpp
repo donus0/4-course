@@ -5,7 +5,7 @@
 #include <utility>
 
 template <typename T>
-class dynamic_array {
+class dynamic_array final {
 private:
     T* data_;
     std::size_t size_;

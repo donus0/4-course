@@ -6,7 +6,7 @@
 
 // Стек, реализованный на базе односвязного списка.
 template <typename T>
-class stack {
+class stack final {
 private:
     struct node {
         T data;
