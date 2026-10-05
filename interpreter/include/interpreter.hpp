@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <string>
 #include <unordered_map>
 
@@ -8,11 +7,10 @@
 
 class interpreter {
 private:
-    using binary_function = std::function<long long(long long a, long long b, int line)>;
-
     std::unordered_map<std::string, long long> _vars;
 
-    std::unordered_map<std::string, std::function<void(const statement&)>> _operations;
+    // Имя операции -> метод этого класса, который её выполняет
+    std::unordered_map<std::string, void (interpreter::*)(const statement&)> _operations;
 
     bool _debug;
 
@@ -22,22 +20,29 @@ private:
     void check_divisor(long long b, int line) const;
     void check_shift(long long b, int line) const;
     long long get_value(const std::string& arg, int line) const;
+    void read_operands(const statement& st, long long& a, long long& b) const;
 
-    void add_binary(const std::string& name, binary_function f);
     void execute(const statement& st);
     void trace_command(const statement& command) const;
 
     void op_set(const statement& st);
+    void op_sum(const statement& st);
+    void op_min(const statement& st);
+    void op_mul(const statement& st);
+    void op_div(const statement& st);
+    void op_mod(const statement& st);
+    void op_and(const statement& st);
+    void op_or(const statement& st);
+    void op_xor(const statement& st);
+    void op_shl(const statement& st);
+    void op_shr(const statement& st);
+    void op_cmp(const statement& st);
     void op_exp(const statement& st);
     void op_inp(const statement& st);
     void op_out(const statement& st);
 
 public:
     interpreter(bool debug = false);
-
-    // Лямбды в _operations хранят указатель this, поэтому копировать нельзя
-    interpreter(const interpreter&) = delete;
-    interpreter& operator=(const interpreter&) = delete;
 
     void run(const std::string& source);
 };

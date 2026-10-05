@@ -22,37 +22,24 @@ bool is_number(const std::string& s) {
     return true;
 }
 
-interpreter::interpreter(bool debug) : _debug(debug) {
-    _operations["set"] = [this](const statement& st) { op_set(st); };
-    _operations["exp"] = [this](const statement& st) { op_exp(st); };
-    _operations["inp"] = [this](const statement& st) { op_inp(st); };
-    _operations["out"] = [this](const statement& st) { op_out(st); };
+interpreter::interpreter(bool debug) {
+    _debug = debug;
 
-    add_binary("sum", [](long long a, long long b, int) { return a + b; });
-    add_binary("min", [](long long a, long long b, int) { return a - b; });
-    add_binary("mul", [](long long a, long long b, int) { return a * b; });
-    add_binary("and", [](long long a, long long b, int) { return a & b; });
-    add_binary("or", [](long long a, long long b, int) { return a | b; });
-    add_binary("xor", [](long long a, long long b, int) { return a ^ b; });
-    add_binary("cmp", [](long long a, long long b, int) -> long long { return (a > b) - (a < b); });
-
-    add_binary("div", [this](long long a, long long b, int line) {
-        check_divisor(b, line);
-        return a / b;
-    });
-    add_binary("mod", [this](long long a, long long b, int line) {
-        check_divisor(b, line);
-        return a % b;
-    });
-    add_binary("shl", [this](long long a, long long b, int line) {
-        check_shift(b, line);
-        // Сдвиг через unsigned, чтобы сдвиг отрицательного числа влево был определён
-        return static_cast<long long>(static_cast<unsigned long long>(a) << b);
-    });
-    add_binary("shr", [this](long long a, long long b, int line) {
-        check_shift(b, line);
-        return a >> b;
-    });
+    _operations["set"] = &interpreter::op_set;
+    _operations["sum"] = &interpreter::op_sum;
+    _operations["min"] = &interpreter::op_min;
+    _operations["mul"] = &interpreter::op_mul;
+    _operations["div"] = &interpreter::op_div;
+    _operations["mod"] = &interpreter::op_mod;
+    _operations["and"] = &interpreter::op_and;
+    _operations["or"] = &interpreter::op_or;
+    _operations["xor"] = &interpreter::op_xor;
+    _operations["shl"] = &interpreter::op_shl;
+    _operations["shr"] = &interpreter::op_shr;
+    _operations["cmp"] = &interpreter::op_cmp;
+    _operations["exp"] = &interpreter::op_exp;
+    _operations["inp"] = &interpreter::op_inp;
+    _operations["out"] = &interpreter::op_out;
 }
 
 void interpreter::error(int line, const std::string& message) const {
@@ -96,18 +83,93 @@ long long interpreter::get_value(const std::string& arg, int line) const {
     return it->second;
 }
 
-void interpreter::add_binary(const std::string& name, binary_function f) {
-    _operations[name] = [this, f](const statement& st) {
-        check_command(st, 2);
-        long long a = get_value(st.args[0], st.line);
-        long long b = get_value(st.args[1], st.line);
-        _vars[st.args[0]] = f(a, b, st.line);
-    };
+// Общая часть команд вида "op x,y;": проверяет команду и достаёт значения x и y
+void interpreter::read_operands(const statement& st, long long& a, long long& b) const {
+    check_command(st, 2);
+    a = get_value(st.args[0], st.line);
+    b = get_value(st.args[1], st.line);
 }
 
 void interpreter::op_set(const statement& st) {
     check_command(st, 2);
     _vars[st.args[0]] = get_value(st.args[1], st.line);
+}
+
+void interpreter::op_sum(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a + b;
+}
+
+void interpreter::op_min(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a - b;
+}
+
+void interpreter::op_mul(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a * b;
+}
+
+void interpreter::op_div(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    check_divisor(b, st.line);
+    _vars[st.args[0]] = a / b;
+}
+
+void interpreter::op_mod(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    check_divisor(b, st.line);
+    _vars[st.args[0]] = a % b;
+}
+
+void interpreter::op_and(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a & b;
+}
+
+void interpreter::op_or(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a | b;
+}
+
+void interpreter::op_xor(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a ^ b;
+}
+
+void interpreter::op_shl(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    check_shift(b, st.line);
+    // Сдвиг через unsigned, чтобы сдвиг отрицательного числа влево был определён
+    _vars[st.args[0]] = static_cast<long long>(static_cast<unsigned long long>(a) << b);
+}
+
+void interpreter::op_shr(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    check_shift(b, st.line);
+    _vars[st.args[0]] = a >> b;
+}
+
+void interpreter::op_cmp(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    if (a < b) {
+        _vars[st.args[0]] = -1;
+    } else if (a > b) {
+        _vars[st.args[0]] = 1;
+    } else {
+        _vars[st.args[0]] = 0;
+    }
 }
 
 void interpreter::trace_command(const statement& command) const {
@@ -173,7 +235,8 @@ void interpreter::execute(const statement& st) {
     if (it == _operations.end()) {
         error(st.line, "неизвестная операция '" + st.op + "'");
     }
-    it->second(st);
+    // it->second — метод из таблицы, вызываем его у текущего объекта
+    (this->*it->second)(st);
 }
 
 void interpreter::run(const std::string& source) {
