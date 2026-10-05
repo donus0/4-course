@@ -8,16 +8,12 @@
 
 class interpreter {
 private:
-    // Функция команды вида "op x,y;": по значениям x и y возвращает новое x
     using binary_function = std::function<long long(long long a, long long b, int line)>;
 
-    // Значения переменных: имя -> число
     std::unordered_map<std::string, long long> _vars;
 
-    // Имя операции в тексте программы -> функция, которая её выполняет
     std::unordered_map<std::string, std::function<void(const statement&)>> _operations;
 
-    // Режим трассировки (флаг -d): exp печатает перевод выражения в постфикс
     bool _debug;
 
     void error(int line, const std::string& message) const;
