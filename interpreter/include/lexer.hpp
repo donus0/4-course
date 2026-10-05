@@ -10,11 +10,8 @@ struct statement {
     int line;
 };
 
-// Разбирает текст программы на команды по одной
 class lexer {
 private:
-    // Ссылка, а не копия: текст программы может быть большим, а он и так
-    // живёт всё время работы лексера (в interpreter::run)
     const std::string& _source;
     std::size_t _pos;
     int _line;

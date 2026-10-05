@@ -48,8 +48,7 @@ void interpreter::error(int line, const std::string& message) const {
 
 void interpreter::check_args_count(const statement& st, std::size_t count) const {
     if (st.args.size() != count) {
-        error(st.line, "операция '" + st.op + "' ожидает " + std::to_string(count) +
-                           " аргумент(ов), получено " + std::to_string(st.args.size()));
+        error(st.line, "операция '" + st.op + "' ожидает " + std::to_string(count) +" аргумент(ов), получено " + std::to_string(st.args.size()));
     }
 }
 
@@ -83,7 +82,6 @@ long long interpreter::get_value(const std::string& arg, int line) const {
     return it->second;
 }
 
-// Общая часть команд вида "op x,y;": проверяет команду и достаёт значения x и y
 void interpreter::read_operands(const statement& st, long long& a, long long& b) const {
     check_command(st, 2);
     a = get_value(st.args[0], st.line);
