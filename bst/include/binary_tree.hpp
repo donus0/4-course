@@ -2,9 +2,6 @@
 
 #include <cstddef>
 
-// Бинарное дерево поиска (BST) без балансировки: ключи хранятся так, что
-// для любого узла всё левое поддерево меньше ключа, а правое — больше.
-// Даёт операции вставки и поиска за O(h), где h — высота дерева.
 template <typename Key, typename Value>
 class binary_tree {
 private:
@@ -63,8 +60,6 @@ public:
         destroy(root_);
     }
 
-    // Поиск значения по ключу. Возвращает указатель на значение или nullptr,
-    // если ключ в дереве не встречается.
     Value* find(const Key& key) {
         node* n = find_node(root_, key);
         return n == nullptr ? nullptr : &n->value;
@@ -75,8 +70,6 @@ public:
         return n == nullptr ? nullptr : &n->value;
     }
 
-    // Вставляет ключ со значением по умолчанию, если его ещё нет, и
-    // возвращает ссылку на значение (как std::map::operator[]).
     Value& operator[](const Key& key) {
         node** slot = &root_;
         while (*slot != nullptr) {
@@ -101,8 +94,6 @@ public:
         return size_ == 0;
     }
 
-    // Обходит дерево в порядке возрастания ключей (левое поддерево, узел,
-    // правое поддерево), вызывая visitor(key, value) для каждого узла.
     template <typename Visitor>
     void inorder_traversal(Visitor visitor) const {
         inorder(root_, visitor);
