@@ -3,11 +3,23 @@
 #include <cctype>
 #include <stdexcept>
 
-lexer::lexer(const std::string& source) {
-    _source = source;
-    _pos = 0;
-    _line = 1;
+static bool is_letter(char c) {
+    return std::isalpha(static_cast<unsigned char>(c));
 }
+
+static bool is_digit(char c) {
+    return std::isdigit(static_cast<unsigned char>(c));
+}
+
+static bool is_name_char(char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+}
+
+static bool is_not_semicolon(char c) {
+    return c != ';';
+}
+
+lexer::lexer(const std::string& source) : _source(source), _pos(0), _line(1) {}
 
 // Текущий символ или '\0', если дошли до конца текста
 char lexer::current() const {
@@ -30,62 +42,51 @@ void lexer::skip_spaces() {
     }
 }
 
-// Имя операции: set, sum, min, ...
-std::string lexer::read_op() {
-    std::string result;
-    while (std::isalpha(static_cast<unsigned char>(current()))) {
-        result += current();
+std::string lexer::read_while(bool (*condition)(char)) {
+    std::size_t start = _pos;
+    while (_pos < _source.size() && condition(_source[_pos])) {
+        if (_source[_pos] == '\n') {
+            _line++;
+        }
         _pos++;
     }
+    return _source.substr(start, _pos - start);
+}
+
+std::string lexer::read_op() {
+    std::string result = read_while(is_letter);
     if (result.empty()) {
         error("ожидалось имя операции (set sum min mul div mod and or xor shl shr cmp exp inp out)");
     }
     return result;
 }
 
-// Аргумент: целое число (возможно, со знаком минус) или имя переменной
 std::string lexer::read_arg() {
-    std::string result;
     char c = current();
 
-    if (c == '-' || std::isdigit(static_cast<unsigned char>(c))) {
+    if (c == '-' || is_digit(c)) {
+        std::string sign;
         if (c == '-') {
-            result += '-';
+            sign = "-";
             _pos++;
         }
-        if (!std::isdigit(static_cast<unsigned char>(current()))) {
+        std::string digits = read_while(is_digit);
+        if (digits.empty()) {
             error("ожидалась цифра после знака '-'");
         }
-        while (std::isdigit(static_cast<unsigned char>(current()))) {
-            result += current();
-            _pos++;
-        }
-        return result;
+        return sign + digits;
     }
 
-    if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
-        while (std::isalnum(static_cast<unsigned char>(current())) || current() == '_') {
-            result += current();
-            _pos++;
-        }
-        return result;
+    if (is_letter(c) || c == '_') {
+        return read_while(is_name_char);
     }
 
     error("ожидался аргумент (целое число или имя переменной)");
-    return result;
+    return "";
 }
 
-// Выражение для команды exp: весь текст до ';', например "(a+b)*c".
-// Его синтаксис проверяется уже при переводе в постфиксную запись.
 std::string lexer::read_expr() {
-    std::string result;
-    while (current() != ';' && current() != '\0') {
-        if (current() == '\n') {
-            _line++;
-        }
-        result += current();
-        _pos++;
-    }
+    std::string result = read_while(is_not_semicolon);
     while (!result.empty() && std::isspace(static_cast<unsigned char>(result.back()))) {
         result.pop_back();
     }
@@ -110,7 +111,6 @@ bool lexer::next(statement& st) {
     }
     skip_spaces();
 
-    // Читаем аргументы через запятую, пока не встретим ';'
     if (current() != ';') {
         st.args.push_back(read_arg());
         skip_spaces();
@@ -118,7 +118,6 @@ bool lexer::next(statement& st) {
         while (current() == ',') {
             _pos++;
             skip_spaces();
-            // У exp второй аргумент — выражение, а не просто число или переменная
             if (st.op == "exp" && st.args.size() == 1) {
                 st.args.push_back(read_expr());
             } else {

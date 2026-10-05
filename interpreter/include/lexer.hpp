@@ -13,13 +13,16 @@ struct statement {
 // Разбирает текст программы на команды по одной
 class lexer {
 private:
-    std::string _source;
+    // Ссылка, а не копия: текст программы может быть большим, а он и так
+    // живёт всё время работы лексера (в interpreter::run)
+    const std::string& _source;
     std::size_t _pos;
     int _line;
 
     char current() const;
     void error(const std::string& message) const;
     void skip_spaces();
+    std::string read_while(bool (*condition)(char));
     std::string read_op();
     std::string read_arg();
     std::string read_expr();

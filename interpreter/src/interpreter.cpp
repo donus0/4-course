@@ -6,24 +6,6 @@
 #include <iostream>
 #include <stdexcept>
 
-// Поддерживаемые операции:
-//   "set x,y;"    x = y              (y — число или переменная)
-//   "sum x,y;"    x = x + y
-//   "min x,y;"    x = x - y
-//   "mul x,y;"    x = x * y
-//   "div x,y;"    x = x / y          (целочисленное деление)
-//   "mod x,y;"    x = x % y          (остаток от деления)
-//   "and x,y;"    x = x & y          (побитовое И)
-//   "or x,y;"     x = x | y          (побитовое ИЛИ)
-//   "xor x,y;"    x = x ^ y          (побитовое исключающее ИЛИ)
-//   "shl x,y;"    x = x << y         (сдвиг влево, 0 <= y < 64)
-//   "shr x,y;"    x = x >> y         (сдвиг вправо, 0 <= y < 64)
-//   "cmp x,y;"    x = -1, если x < y; 0, если x == y; 1, если x > y
-//   "exp x,e;"    x = значение выражения e, например "exp x,(a+b)*-c%7;"
-//   "inp x;"      x = <число с клавиатуры>
-//   "out x;"      вывод значения x (число или переменная) и перевод строки
-
-// Проверяет, что строка — целое число, например "42" или "-7"
 bool is_number(const std::string& s) {
     std::size_t start = 0;
     if (!s.empty() && s[0] == '-') {
@@ -40,24 +22,37 @@ bool is_number(const std::string& s) {
     return true;
 }
 
-// Заполняем таблицу операций. [this] нужен, чтобы внутри лямбды
-// можно было вызвать метод этого объекта (op_set, op_sum, ...).
 interpreter::interpreter(bool debug) : _debug(debug) {
     _operations["set"] = [this](const statement& st) { op_set(st); };
-    _operations["sum"] = [this](const statement& st) { op_sum(st); };
-    _operations["min"] = [this](const statement& st) { op_min(st); };
-    _operations["mul"] = [this](const statement& st) { op_mul(st); };
-    _operations["div"] = [this](const statement& st) { op_div(st); };
-    _operations["mod"] = [this](const statement& st) { op_mod(st); };
-    _operations["and"] = [this](const statement& st) { op_and(st); };
-    _operations["or"] = [this](const statement& st) { op_or(st); };
-    _operations["xor"] = [this](const statement& st) { op_xor(st); };
-    _operations["shl"] = [this](const statement& st) { op_shl(st); };
-    _operations["shr"] = [this](const statement& st) { op_shr(st); };
-    _operations["cmp"] = [this](const statement& st) { op_cmp(st); };
     _operations["exp"] = [this](const statement& st) { op_exp(st); };
     _operations["inp"] = [this](const statement& st) { op_inp(st); };
     _operations["out"] = [this](const statement& st) { op_out(st); };
+
+    add_binary("sum", [](long long a, long long b, int) { return a + b; });
+    add_binary("min", [](long long a, long long b, int) { return a - b; });
+    add_binary("mul", [](long long a, long long b, int) { return a * b; });
+    add_binary("and", [](long long a, long long b, int) { return a & b; });
+    add_binary("or", [](long long a, long long b, int) { return a | b; });
+    add_binary("xor", [](long long a, long long b, int) { return a ^ b; });
+    add_binary("cmp", [](long long a, long long b, int) -> long long { return (a > b) - (a < b); });
+
+    add_binary("div", [this](long long a, long long b, int line) {
+        check_divisor(b, line);
+        return a / b;
+    });
+    add_binary("mod", [this](long long a, long long b, int line) {
+        check_divisor(b, line);
+        return a % b;
+    });
+    add_binary("shl", [this](long long a, long long b, int line) {
+        check_shift(b, line);
+        // Сдвиг через unsigned, чтобы сдвиг отрицательного числа влево был определён
+        return static_cast<long long>(static_cast<unsigned long long>(a) << b);
+    });
+    add_binary("shr", [this](long long a, long long b, int line) {
+        check_shift(b, line);
+        return a >> b;
+    });
 }
 
 void interpreter::error(int line, const std::string& message) const {
@@ -71,156 +66,59 @@ void interpreter::check_args_count(const statement& st, std::size_t count) const
     }
 }
 
-// Первый аргумент set/sum/... должен быть переменной, а не числом
-void interpreter::check_is_variable(const std::string& arg, int line) const {
-    if (arg.empty() || is_number(arg)) {
-        error(line, "ожидалось имя переменной, получено '" + arg + "'");
+void interpreter::check_command(const statement& st, std::size_t count) const {
+    check_args_count(st, count);
+    if (st.args[0].empty() || is_number(st.args[0])) {
+        error(st.line, "ожидалось имя переменной, получено '" + st.args[0] + "'");
     }
 }
 
-// Если аргумент — число, возвращает его, иначе значение переменной
+void interpreter::check_divisor(long long b, int line) const {
+    if (b == 0) {
+        error(line, "деление на ноль");
+    }
+}
+
+void interpreter::check_shift(long long b, int line) const {
+    if (b < 0 || b >= 64) {
+        error(line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
+    }
+}
+
 long long interpreter::get_value(const std::string& arg, int line) const {
     if (is_number(arg)) {
         return std::stoll(arg);
     }
-    if (_vars.count(arg) == 0) {
+    auto it = _vars.find(arg);
+    if (it == _vars.end()) {
         error(line, "переменная '" + arg + "' не определена");
     }
-    return _vars.at(arg);
+    return it->second;
+}
+
+void interpreter::add_binary(const std::string& name, binary_function f) {
+    _operations[name] = [this, f](const statement& st) {
+        check_command(st, 2);
+        long long a = get_value(st.args[0], st.line);
+        long long b = get_value(st.args[1], st.line);
+        _vars[st.args[0]] = f(a, b, st.line);
+    };
 }
 
 void interpreter::op_set(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
+    check_command(st, 2);
     _vars[st.args[0]] = get_value(st.args[1], st.line);
 }
 
-void interpreter::op_sum(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a + b;
+void interpreter::trace_command(const statement& command) const {
+    const std::string& target = command.args[0];
+    std::string text = command.op + " " + target + "," + command.args[1] + ";";
+    text.resize(std::max<std::size_t>(text.size() + 2, 16), ' ');
+    std::cout << "    " << text << target << " = " << _vars.at(target) << "\n";
 }
 
-void interpreter::op_min(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a - b;
-}
-
-void interpreter::op_mul(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a * b;
-}
-
-void interpreter::op_div(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    if (b == 0) {
-        error(st.line, "деление на ноль");
-    }
-    _vars[st.args[0]] = a / b;
-}
-
-void interpreter::op_mod(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    if (b == 0) {
-        error(st.line, "деление на ноль");
-    }
-    _vars[st.args[0]] = a % b;
-}
-
-void interpreter::op_and(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a & b;
-}
-
-void interpreter::op_or(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a | b;
-}
-
-void interpreter::op_xor(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    _vars[st.args[0]] = a ^ b;
-}
-
-// Сдвиг на отрицательное число или на >= 64 бит в C++ — неопределённое
-// поведение, поэтому такой сдвиг считаем ошибкой
-void interpreter::op_shl(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    if (b < 0 || b >= 64) {
-        error(st.line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
-    }
-    // Сдвиг через unsigned, чтобы сдвиг отрицательного числа влево был определён
-    _vars[st.args[0]] = static_cast<long long>(static_cast<unsigned long long>(a) << b);
-}
-
-void interpreter::op_shr(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    if (b < 0 || b >= 64) {
-        error(st.line, "величина сдвига должна быть от 0 до 63, получено " + std::to_string(b));
-    }
-    _vars[st.args[0]] = a >> b;
-}
-
-void interpreter::op_cmp(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
-
-    long long a = get_value(st.args[0], st.line);
-    long long b = get_value(st.args[1], st.line);
-    if (a < b) {
-        _vars[st.args[0]] = -1;
-    } else if (a == b) {
-        _vars[st.args[0]] = 0;
-    } else {
-        _vars[st.args[0]] = 1;
-    }
-}
-
-// Выражение переводится в постфиксную запись, затем в обычные команды
-// (set/sum/min/...), которые сразу выполняются. Временные переменные
-// ($1, $2, ...) после вычисления удаляются.
 void interpreter::op_exp(const statement& st) {
-    check_args_count(st, 2);
-    check_is_variable(st.args[0], st.line);
+    check_command(st, 2);
 
     if (_debug) {
         std::cout << "[трассировка] строка " << st.line << ": exp " << st.args[0] << "," << st.args[1]
@@ -236,25 +134,19 @@ void interpreter::op_exp(const statement& st) {
     for (const statement& command : commands) {
         execute(command);
         if (_debug) {
-            const std::string& target = command.args[0];
-            std::string text = command.op + " " + target + "," + command.args[1] + ";";
-            text.resize(std::max<std::size_t>(text.size() + 2, 16), ' ');
-            std::cout << "    " << text << target << " = " << _vars.at(target) << "\n";
+            trace_command(command);
         }
     }
 
-    for (auto it = _vars.begin(); it != _vars.end();) {
-        if (it->first[0] == '$') {
-            it = _vars.erase(it);
-        } else {
-            ++it;
+    for (const statement& command : commands) {
+        if (command.args[0][0] == '$') {
+            _vars.erase(command.args[0]);
         }
     }
 }
 
 void interpreter::op_inp(const statement& st) {
-    check_args_count(st, 1);
-    check_is_variable(st.args[0], st.line);
+    check_command(st, 1);
 
     std::string line;
     if (!std::getline(std::cin, line)) {
@@ -277,11 +169,11 @@ void interpreter::op_out(const statement& st) {
 }
 
 void interpreter::execute(const statement& st) {
-    if (_operations.count(st.op) == 0) {
+    auto it = _operations.find(st.op);
+    if (it == _operations.end()) {
         error(st.line, "неизвестная операция '" + st.op + "'");
     }
-    // Достаём функцию по имени операции и сразу вызываем её
-    _operations.at(st.op)(st);
+    it->second(st);
 }
 
 void interpreter::run(const std::string& source) {

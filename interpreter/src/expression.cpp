@@ -9,8 +9,16 @@ static void syntax_error(int line, const std::string& message) {
                              "): в выражении " + message);
 }
 
+static std::string quoted(char c) {
+    return "'" + std::string(1, c) + "'";
+}
+
 static bool is_binary_operator(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/' || c == '%';
+}
+
+static bool is_name_char(char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
 }
 
 // Унарный минус '~' выполняется раньше любых бинарных операторов
@@ -41,8 +49,6 @@ std::string postfix_to_string(const std::vector<std::string>& postfix) {
     return result;
 }
 
-// Дополняет строку пробелами до width символов. Длина считается в символах,
-// а не в байтах, чтобы русские слова в UTF-8 не сбивали колонки.
 static std::string pad(const std::string& s, std::size_t width) {
     std::size_t length = 0;
     for (char c : s) {
@@ -54,15 +60,24 @@ static std::string pad(const std::string& s, std::size_t width) {
 }
 
 static void print_step(const std::string& token, const std::vector<char>& operators,
-                       const std::vector<std::string>& postfix) {
-    std::string stack;
-    for (char op : operators) {
+                       const std::vector<std::string>& postfix, std::size_t from) {
+    const std::size_t max_shown = 10;
+    std::size_t first = operators.size() > max_shown ? operators.size() - max_shown : 0;
+    std::string stack = first > 0 ? "..." : "";
+    for (std::size_t i = first; i < operators.size(); i++) {
         if (!stack.empty()) {
             stack += ' ';
         }
-        stack += op;
+        stack += operators[i];
     }
-    std::cout << "  " << pad(token, 8) << pad(stack, 16) << postfix_to_string(postfix) << "\n";
+
+    std::vector<std::string> added(postfix.begin() + from, postfix.end());
+    std::cout << "  " << pad(token, 8) << pad(stack, 24) << postfix_to_string(added) << "\n";
+}
+
+static void pop_operator(std::vector<char>& operators, std::vector<std::string>& postfix) {
+    postfix.push_back(std::string(1, operators.back()));
+    operators.pop_back();
 }
 
 std::vector<std::string> infix_to_postfix(const std::string& expr, int line, bool trace) {
@@ -70,10 +85,8 @@ std::vector<std::string> infix_to_postfix(const std::string& expr, int line, boo
     std::vector<char> operators;
 
     if (trace) {
-        std::cout << "  " << pad("символ", 8) << pad("стек", 16) << "выход\n";
+        std::cout << "  " << pad("символ", 8) << pad("стек", 24) << "в выход\n";
     }
-    // true — дальше должен идти операнд (число, переменная, '(' или унарный минус),
-    // false — дальше должен идти бинарный оператор или ')'
     bool expect_operand = true;
 
     std::size_t i = 0;
@@ -86,20 +99,20 @@ std::vector<std::string> infix_to_postfix(const std::string& expr, int line, boo
         }
 
         std::size_t token_start = i;
-        if (std::isalnum(static_cast<unsigned char>(c)) || c == '_') {
+        std::size_t output_before = postfix.size();
+
+        if (is_name_char(c)) {
             if (!expect_operand) {
-                syntax_error(line, "пропущен оператор перед '" + std::string(1, c) + "'");
+                syntax_error(line, "пропущен оператор перед " + quoted(c));
             }
-            std::size_t start = i;
-            bool is_number = std::isdigit(static_cast<unsigned char>(c));
-            while (i < expr.size() &&
-                   (std::isalnum(static_cast<unsigned char>(expr[i])) || expr[i] == '_')) {
-                if (is_number && !std::isdigit(static_cast<unsigned char>(expr[i]))) {
-                    syntax_error(line, "некорректное число '" + expr.substr(start, i - start + 1) + "'");
+            bool number = std::isdigit(static_cast<unsigned char>(c));
+            while (i < expr.size() && is_name_char(expr[i])) {
+                if (number && !std::isdigit(static_cast<unsigned char>(expr[i]))) {
+                    syntax_error(line, "некорректное число '" + expr.substr(token_start, i - token_start + 1) + "'");
                 }
                 i++;
             }
-            postfix.push_back(expr.substr(start, i - start));
+            postfix.push_back(expr.substr(token_start, i - token_start));
             expect_operand = false;
         } else if (c == '(') {
             if (!expect_operand) {
@@ -112,8 +125,7 @@ std::vector<std::string> infix_to_postfix(const std::string& expr, int line, boo
                 syntax_error(line, "ожидался операнд перед ')'");
             }
             while (!operators.empty() && operators.back() != '(') {
-                postfix.push_back(std::string(1, operators.back()));
-                operators.pop_back();
+                pop_operator(operators, postfix);
             }
             if (operators.empty()) {
                 syntax_error(line, "лишняя закрывающая скобка");
@@ -126,38 +138,37 @@ std::vector<std::string> infix_to_postfix(const std::string& expr, int line, boo
             i++;
         } else if (is_binary_operator(c)) {
             if (expect_operand) {
-                syntax_error(line, "ожидался операнд перед '" + std::string(1, c) + "'");
+                syntax_error(line, "ожидался операнд перед " + quoted(c));
             }
             while (!operators.empty() && operators.back() != '(' &&
                    precedence(operators.back()) >= precedence(c)) {
-                postfix.push_back(std::string(1, operators.back()));
-                operators.pop_back();
+                pop_operator(operators, postfix);
             }
             operators.push_back(c);
             expect_operand = true;
             i++;
         } else {
-            syntax_error(line, "недопустимый символ '" + std::string(1, c) + "'");
+            syntax_error(line, "недопустимый символ " + quoted(c));
         }
 
         if (trace) {
-            print_step(expr.substr(token_start, i - token_start), operators, postfix);
+            print_step(expr.substr(token_start, i - token_start), operators, postfix, output_before);
         }
     }
 
     if (expect_operand) {
         syntax_error(line, "ожидался операнд в конце");
     }
+    std::size_t output_before = postfix.size();
     while (!operators.empty()) {
         if (operators.back() == '(') {
             syntax_error(line, "не закрыта скобка");
         }
-        postfix.push_back(std::string(1, operators.back()));
-        operators.pop_back();
+        pop_operator(operators, postfix);
     }
 
     if (trace) {
-        print_step("конец", operators, postfix);
+        print_step("конец", operators, postfix, output_before);
     }
 
     return postfix;
@@ -186,33 +197,35 @@ static std::string operator_command(char op) {
     }
 }
 
-// Стек хранит имена, где лежат промежуточные значения: переменные программы,
-// числа или временные переменные $1, $2, ... Если левый операнд уже временная
-// переменная, результат записывается прямо в неё, иначе заводится новая.
+static std::string pop_operand(std::vector<std::string>& operands) {
+    std::string top = operands.back();
+    operands.pop_back();
+    return top;
+}
+
 std::vector<statement> postfix_to_commands(const std::vector<std::string>& postfix,
                                            const std::string& dst, int line) {
     std::vector<statement> commands;
     std::vector<std::string> operands;
     int temp_count = 0;
 
+    auto new_temp = [&](const std::string& value) {
+        std::string temp = "$" + std::to_string(++temp_count);
+        commands.push_back(make_command("set", temp, value, line));
+        return temp;
+    };
+
     for (const std::string& token : postfix) {
         if (token == "~") {
-            std::string a = operands.back();
-            operands.pop_back();
-            std::string temp = "$" + std::to_string(++temp_count);
-            commands.push_back(make_command("set", temp, "0", line));
+            std::string a = pop_operand(operands);
+            std::string temp = new_temp("0");
             commands.push_back(make_command("min", temp, a, line));
             operands.push_back(temp);
         } else if (token.size() == 1 && is_binary_operator(token[0])) {
-            std::string b = operands.back();
-            operands.pop_back();
-            std::string a = operands.back();
-            operands.pop_back();
-
+            std::string b = pop_operand(operands);
+            std::string a = pop_operand(operands);
             if (a[0] != '$') {
-                std::string temp = "$" + std::to_string(++temp_count);
-                commands.push_back(make_command("set", temp, a, line));
-                a = temp;
+                a = new_temp(a);
             }
             commands.push_back(make_command(operator_command(token[0]), a, b, line));
             operands.push_back(a);
