@@ -56,7 +56,7 @@ std::string lexer::read_while(bool (*condition)(char)) {
 std::string lexer::read_op() {
     std::string result = read_while(is_letter);
     if (result.empty()) {
-        error("ожидалось имя операции (set sum min mul div mod and or xor not shl shr cmp exp inp out)");
+        error("ожидалось имя операции (set sum min mul div mod and or xor not shl shr cmp exp inp out if else while)");
     }
     return result;
 }
@@ -96,6 +96,21 @@ std::string lexer::read_expr() {
     return result;
 }
 
+void lexer::expect_space() {
+    if (current() != ' ' && current() != '\t') {
+        error("после операции ожидался пробел");
+    }
+    skip_spaces();
+}
+
+void lexer::expect_open_brace() {
+    skip_spaces();
+    if (current() != '{') {
+        error("ожидался символ '{'");
+    }
+    _pos++;
+}
+
 bool lexer::next(statement& st) {
     skip_spaces();
     if (_pos >= _source.size()) {
@@ -104,12 +119,30 @@ bool lexer::next(statement& st) {
 
     st.args.clear();
     st.line = _line;
+    st.pos = _pos;
+
+    // Конец блока
+    if (current() == '}') {
+        _pos++;
+        st.op = "}";
+        return true;
+    }
+
     st.op = read_op();
 
-    if (current() != ' ' && current() != '\t') {
-        error("после операции ожидался пробел");
+    // Заголовки блоков: "if cond {", "while cond {", "else {"
+    if (st.op == "if" || st.op == "while") {
+        expect_space();
+        st.args.push_back(read_arg());
+        expect_open_brace();
+        return true;
     }
-    skip_spaces();
+    if (st.op == "else") {
+        expect_open_brace();
+        return true;
+    }
+
+    expect_space();
 
     if (current() != ';') {
         st.args.push_back(read_arg());
@@ -133,4 +166,13 @@ bool lexer::next(statement& st) {
     _pos++;
 
     return true;
+}
+
+position lexer::where() const {
+    return {_pos, _line};
+}
+
+void lexer::jump(const position& to) {
+    _pos = to.pos;
+    _line = to.line;
 }

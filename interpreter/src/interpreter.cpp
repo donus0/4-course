@@ -244,11 +244,77 @@ void interpreter::execute(const statement& st) {
     (this->*it->second)(st);
 }
 
+static void syntax_error(int line, const std::string& message) {
+    throw std::runtime_error("Синтаксическая ошибка (строка " + std::to_string(line) + "): " + message);
+}
+
+struct open_block {
+    enum kind_t { THEN, ELSE, WHILE } kind;
+    std::size_t key;  // смещение команды, для которой заполняется прыжок
+    int line;
+};
+
+void interpreter::build_jumps(const std::string& source) {
+    _jumps.clear();
+
+    lexer lex(source);
+    statement st;
+    std::vector<open_block> blocks;
+
+    while (lex.next(st)) {
+        if (st.op == "if") {
+            blocks.push_back({open_block::THEN, st.pos, st.line});
+        } else if (st.op == "while") {
+            blocks.push_back({open_block::WHILE, st.pos, st.line});
+        } else if (st.op == "else") {
+            syntax_error(st.line, "else без соответствующего if");
+        } else if (st.op == "}") {
+            if (blocks.empty()) {
+                syntax_error(st.line, "лишняя '}'");
+            }
+            open_block block = blocks.back();
+            blocks.pop_back();
+
+            if (block.kind == open_block::THEN) {
+                statement else_st;
+                if (!lex.next(else_st) || else_st.op != "else") {
+                    syntax_error(block.line, "у if нет обязательной ветки else");
+                }
+                _jumps[block.key] = lex.where();
+                blocks.push_back({open_block::ELSE, st.pos, else_st.line});
+            } else if (block.kind == open_block::ELSE) {
+                _jumps[block.key] = lex.where();
+            } else {
+                _jumps[st.pos] = {block.key, block.line};
+                _jumps[block.key] = lex.where();
+            }
+        }
+    }
+
+    if (!blocks.empty()) {
+        syntax_error(blocks.back().line, "блок не закрыт символом '}'");
+    }
+}
+
 void interpreter::run(const std::string& source) {
+    build_jumps(source);
+
     lexer lex(source);
     statement st;
 
     while (lex.next(st)) {
-        execute(st);
+        if (st.op == "if" || st.op == "while") {
+            if (get_value(st.args[0], st.line) == 0) {
+                lex.jump(_jumps.at(st.pos));
+            }
+        } else if (st.op == "}") {
+            // У "}" ветки else прыжка нет — выполнение просто идёт дальше
+            auto it = _jumps.find(st.pos);
+            if (it != _jumps.end()) {
+                lex.jump(it->second);
+            }
+        } else {
+            execute(st);
+        }
     }
 }

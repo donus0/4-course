@@ -12,7 +12,14 @@ private:
     // Имя операции -> метод этого класса, который её выполняет
     std::unordered_map<std::string, void (interpreter::*)(const statement&)> _operations;
 
+    // Таблица переходов: смещение команды в тексте -> куда прыгнуть.
+    // Для "if"/"while" прыжок выполняется, когда условие ложно,
+    // для "}" (конец ветки if или тела while) — всегда.
+    std::unordered_map<std::size_t, position> _jumps;
+
     bool _debug;
+
+    void build_jumps(const std::string& source);
 
     void error(int line, const std::string& message) const;
     void check_args_count(const statement& st, std::size_t count) const;

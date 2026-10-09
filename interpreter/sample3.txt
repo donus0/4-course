@@ -1,0 +1,48 @@
+set a,3;
+set b,10;
+
+set t,a;
+cmp t,b;
+sum t,1;
+if t {
+    set m,a;
+} else {
+    set m,b;
+}
+out m;
+
+set s,0;
+set i,b;
+while i {
+    sum s,i;
+    min i,1;
+}
+out s;
+
+set f,1;
+set i,a;
+while i {
+    mul f,i;
+    min i,1;
+}
+out f;
+
+set i,1;
+set k,5;
+while k {
+    set r,i;
+    mod r,2;
+    if r {
+        set x,i;
+        mul x,-1;
+        out x;
+    } else {
+        if 0 {
+            out 999;
+        } else {
+            out i;
+        }
+    }
+    sum i,1;
+    min k,1;
+}
