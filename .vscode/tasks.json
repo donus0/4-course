@@ -96,6 +96,28 @@
       "command": "${workspaceFolder}/build/expr_tree/expr_tree/expr_tree.exe",
       "dependsOn": "cmake: build (expr_tree)",
       "problemMatcher": []
+    },
+    {
+      "label": "cmake: configure (zhegalkin)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/zhegalkin", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build (zhegalkin)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build/zhegalkin", "-j"],
+      "dependsOn": "cmake: configure (zhegalkin)",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run: zhegalkin",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/zhegalkin/zhegalkin/zhegalkin.exe",
+      "dependsOn": "cmake: build (zhegalkin)",
+      "problemMatcher": []
     }
   ]
 }
