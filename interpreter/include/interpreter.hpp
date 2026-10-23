@@ -26,6 +26,7 @@ private:
     void check_command(const statement& st, std::size_t count) const;
     void check_divisor(long long b, int line) const;
     void check_shift(long long b, int line) const;
+    long long to_number(const std::string& s, int line) const;
     long long get_value(const std::string& arg, int line) const;
     void read_operands(const statement& st, long long& a, long long& b) const;
 
@@ -42,6 +43,8 @@ private:
     void op_or(const statement& st);
     void op_xor(const statement& st);
     void op_not(const statement& st);
+    void op_imp(const statement& st);
+    void op_coimp(const statement& st);
     void op_shl(const statement& st);
     void op_shr(const statement& st);
     void op_cmp(const statement& st);

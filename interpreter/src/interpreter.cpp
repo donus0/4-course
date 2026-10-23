@@ -4,22 +4,39 @@
 #include <algorithm>
 #include <cctype>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
+// Есть ли у записи числа префикс 16-ой СС "0x" (после возможного знака '-')
+static bool has_hex_prefix(const std::string& s) {
+    std::size_t start = (!s.empty() && s[0] == '-') ? 1 : 0;
+    return s.size() > start + 1 && s[start] == '0' && (s[start + 1] == 'x' || s[start + 1] == 'X');
+}
+
+// Целое число в 10-ой СС ("-12") или в 16-ой СС ("0x1F", "-0xff")
 bool is_number(const std::string& s) {
-    std::size_t start = 0;
-    if (!s.empty() && s[0] == '-') {
-        start = 1;
+    bool hex = has_hex_prefix(s);
+    std::size_t start = (!s.empty() && s[0] == '-') ? 1 : 0;
+    if (hex) {
+        start += 2;
     }
     if (start == s.size()) {
         return false;
     }
     for (std::size_t i = start; i < s.size(); i++) {
-        if (!std::isdigit(static_cast<unsigned char>(s[i]))) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        if (hex ? !std::isxdigit(c) : !std::isdigit(c)) {
             return false;
         }
     }
     return true;
+}
+
+// Число в 16-ой СС в виде 64-битного дополнительного кода: -1 -> 0xFFFFFFFFFFFFFFFF
+static std::string to_hex(long long value) {
+    std::ostringstream out;
+    out << "0x" << std::uppercase << std::hex << static_cast<unsigned long long>(value);
+    return out.str();
 }
 
 interpreter::interpreter(bool debug) {
@@ -35,6 +52,8 @@ interpreter::interpreter(bool debug) {
     _operations["or"] = &interpreter::op_or;
     _operations["xor"] = &interpreter::op_xor;
     _operations["not"] = &interpreter::op_not;
+    _operations["imp"] = &interpreter::op_imp;
+    _operations["coimp"] = &interpreter::op_coimp;
     _operations["shl"] = &interpreter::op_shl;
     _operations["shr"] = &interpreter::op_shr;
     _operations["cmp"] = &interpreter::op_cmp;
@@ -72,9 +91,28 @@ void interpreter::check_shift(long long b, int line) const {
     }
 }
 
+// Переводит запись числа (is_number(s) == true) в значение.
+// В 16-ой СС задаются все 64 бита: 0xFFFFFFFFFFFFFFFF == -1.
+long long interpreter::to_number(const std::string& s, int line) const {
+    try {
+        if (has_hex_prefix(s)) {
+            bool negative = s[0] == '-';
+            unsigned long long bits = std::stoull(s.substr(negative ? 3 : 2), nullptr, 16);
+            if (negative) {
+                bits = 0ULL - bits;
+            }
+            return static_cast<long long>(bits);
+        }
+        return std::stoll(s);
+    } catch (const std::out_of_range&) {
+        error(line, "число '" + s + "' не помещается в 64 бита");
+    }
+    return 0;
+}
+
 long long interpreter::get_value(const std::string& arg, int line) const {
     if (is_number(arg)) {
-        return std::stoll(arg);
+        return to_number(arg, line);
     }
     auto it = _vars.find(arg);
     if (it == _vars.end()) {
@@ -148,6 +186,22 @@ void interpreter::op_xor(const statement& st) {
 void interpreter::op_not(const statement& st) {
     check_command(st, 1);
     _vars[st.args[0]] = ~get_value(st.args[0], st.line);
+}
+
+// Импликация a -> b побитово: "imp a,b;" -> a = ~a | b
+// Бит результата равен 0 только там, где в a 1, а в b 0.
+void interpreter::op_imp(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = ~a | b;
+}
+
+// Коимпликация (отрицание импликации) побитово: "coimp a,b;" -> a = a & ~b
+// Бит результата равен 1 только там, где в a 1, а в b 0.
+void interpreter::op_coimp(const statement& st) {
+    long long a, b;
+    read_operands(st, a, b);
+    _vars[st.args[0]] = a & ~b;
 }
 
 void interpreter::op_shl(const statement& st) {
@@ -224,15 +278,27 @@ void interpreter::op_inp(const statement& st) {
         line.pop_back();
     }
     if (!is_number(line)) {
-        error(st.line, "ожидалось целое число, получено '" + line + "'");
+        error(st.line, "ожидалось целое число (например 42, -7 или 0x1F), получено '" + line + "'");
     }
 
-    _vars[st.args[0]] = std::stoll(line);
+    _vars[st.args[0]] = to_number(line, st.line);
 }
 
+// "out a;" или "out a,10;" — вывод в 10-ой СС, "out a,16;" — в 16-ой СС
 void interpreter::op_out(const statement& st) {
-    check_args_count(st, 1);
-    std::cout << get_value(st.args[0], st.line) << "\n";
+    if (st.args.size() != 1 && st.args.size() != 2) {
+        error(st.line, "операция 'out' ожидает 1 или 2 аргумента, получено " + std::to_string(st.args.size()));
+    }
+    long long value = get_value(st.args[0], st.line);
+    long long base = st.args.size() == 2 ? get_value(st.args[1], st.line) : 10;
+
+    if (base == 10) {
+        std::cout << value << "\n";
+    } else if (base == 16) {
+        std::cout << to_hex(value) << "\n";
+    } else {
+        error(st.line, "out поддерживает только 10-ую и 16-ую СС, получено " + std::to_string(base));
+    }
 }
 
 void interpreter::execute(const statement& st) {

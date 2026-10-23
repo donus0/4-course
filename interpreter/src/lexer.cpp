@@ -11,6 +11,10 @@ static bool is_digit(char c) {
     return std::isdigit(static_cast<unsigned char>(c));
 }
 
+static bool is_hex_digit(char c) {
+    return std::isxdigit(static_cast<unsigned char>(c));
+}
+
 static bool is_name_char(char c) {
     return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
 }
@@ -56,7 +60,7 @@ std::string lexer::read_while(bool (*condition)(char)) {
 std::string lexer::read_op() {
     std::string result = read_while(is_letter);
     if (result.empty()) {
-        error("ожидалось имя операции (set sum min mul div mod and or xor not shl shr cmp exp inp out if else while)");
+        error("ожидалось имя операции (set sum min mul div mod and or xor not imp coimp shl shr cmp exp inp out if else while)");
     }
     return result;
 }
@@ -70,6 +74,19 @@ std::string lexer::read_arg() {
             sign = "-";
             _pos++;
         }
+
+        // Число в 16-ой СС: 0x1F или 0X1f
+        char next = _pos + 1 < _source.size() ? _source[_pos + 1] : '\0';
+        if (current() == '0' && (next == 'x' || next == 'X')) {
+            std::string prefix = _source.substr(_pos, 2);
+            _pos += 2;
+            std::string digits = read_while(is_hex_digit);
+            if (digits.empty()) {
+                error("после '" + prefix + "' ожидались шестнадцатеричные цифры (0-9, A-F)");
+            }
+            return sign + prefix + digits;
+        }
+
         std::string digits = read_while(is_digit);
         if (digits.empty()) {
             error("ожидалась цифра после знака '-'");

@@ -1,0 +1,29 @@
+set a,0xC;
+set b,0xA;
+out a;
+out b,16;
+
+set c,a;
+imp c,b;
+out c,16;
+and c,0xF;
+out c,16;
+
+set c,a;
+coimp c,b;
+out c,16;
+out c;
+
+set c,0xFF;
+sum c,1;
+out c,16;
+out c;
+
+set c,-0x1;
+out c,16;
+set c,0xFFFFFFFFFFFFFFFF;
+out c;
+
+inp x;
+out x;
+out x,16;
