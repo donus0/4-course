@@ -1,11 +1,18 @@
 {
+  // Общие задачи для Windows (MSYS2/MinGW) и Linux (gcc + make).
+  // Блоки "windows"/"linux" переопределяют поля под текущую ОС.
   "version": "2.0.0",
   "tasks": [
     {
       "label": "cmake: configure (postfix)",
       "type": "shell",
       "command": "cmake",
-      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/postfix", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "windows": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/postfix", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
+      "linux": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/postfix", "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
       "problemMatcher": []
     },
     {
@@ -20,7 +27,12 @@
     {
       "label": "run: postfix",
       "type": "shell",
-      "command": "${workspaceFolder}/build/postfix/postfix/postfix.exe",
+      "windows": {
+        "command": "${workspaceFolder}/build/postfix/postfix/postfix.exe"
+      },
+      "linux": {
+        "command": "${workspaceFolder}/build/postfix/postfix/postfix"
+      },
       "dependsOn": "cmake: build (postfix)",
       "problemMatcher": []
     },
@@ -28,7 +40,12 @@
       "label": "cmake: configure (bst)",
       "type": "shell",
       "command": "cmake",
-      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/bst", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "windows": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/bst", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
+      "linux": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/bst", "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
       "problemMatcher": []
     },
     {
@@ -42,7 +59,12 @@
     {
       "label": "run: bst",
       "type": "shell",
-      "command": "${workspaceFolder}/build/bst/bst/bst.exe",
+      "windows": {
+        "command": "${workspaceFolder}/build/bst/bst/bst.exe"
+      },
+      "linux": {
+        "command": "${workspaceFolder}/build/bst/bst/bst"
+      },
       "options": {
         "cwd": "${workspaceFolder}/bst"
       },
@@ -53,7 +75,12 @@
       "label": "cmake: configure (interpreter)",
       "type": "shell",
       "command": "cmake",
-      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/interpreter", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "windows": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/interpreter", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
+      "linux": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/interpreter", "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
       "problemMatcher": []
     },
     {
@@ -67,7 +94,12 @@
     {
       "label": "run: interpreter",
       "type": "shell",
-      "command": "${workspaceFolder}/build/interpreter/interpreter/interpreter.exe",
+      "windows": {
+        "command": "${workspaceFolder}/build/interpreter/interpreter/interpreter.exe"
+      },
+      "linux": {
+        "command": "${workspaceFolder}/build/interpreter/interpreter/interpreter"
+      },
       "args": ["sample.txt"],
       "options": {
         "cwd": "${workspaceFolder}/interpreter"
@@ -79,7 +111,12 @@
       "label": "cmake: configure (expr_tree)",
       "type": "shell",
       "command": "cmake",
-      "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/expr_tree", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"],
+      "windows": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/expr_tree", "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
+      "linux": {
+        "args": ["-S", "${workspaceFolder}", "-B", "${workspaceFolder}/build/expr_tree", "-G", "Unix Makefiles", "-DCMAKE_BUILD_TYPE=Debug"]
+      },
       "problemMatcher": []
     },
     {
@@ -93,7 +130,12 @@
     {
       "label": "run: expr_tree",
       "type": "shell",
-      "command": "${workspaceFolder}/build/expr_tree/expr_tree/expr_tree.exe",
+      "windows": {
+        "command": "${workspaceFolder}/build/expr_tree/expr_tree/expr_tree.exe"
+      },
+      "linux": {
+        "command": "${workspaceFolder}/build/expr_tree/expr_tree/expr_tree"
+      },
       "dependsOn": "cmake: build (expr_tree)",
       "problemMatcher": []
     },
