@@ -13,7 +13,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 
 def series_exp_even(x, n_terms=60):
-    """sum_{n=0}^inf x^(2n) / (2n)!  (== cosh(x)), computed as a truncated series."""
+    """Приближает cosh(x) суммой первых n_terms членов ряда sum_{n=0}^inf x^(2n) / (2n)!."""
     x = np.asarray(x, dtype=float)
     total = np.zeros_like(x)
     term = np.ones_like(x)  # n = 0 term: x^0 / 0! = 1
@@ -41,7 +41,7 @@ STEPS = [0.01, 0.005, 0.001]
 
 
 def make_grid(a, b, h):
-    """Uniform grid on [a, b] with step h (last point may fall slightly short of b)."""
+    """Строит равномерную сетку от a с шагом h, округляя число шагов (b - a) / h."""
     n = int(round((b - a) / h))
     x = a + h * np.arange(n + 1)
     return x

@@ -15,7 +15,7 @@ H = 0.025
 
 
 def euler_scalar(f, y0, a, b, h):
-    """Explicit Euler method for a scalar ODE y' = f(x, y), y(a) = y0."""
+    """Решает задачу Коши для скалярного ОДУ y' = f(x, y), y(a) = y0 явным методом Эйлера."""
     n = int(round((b - a) / h))
     x = a + h * np.arange(n + 1)
     y = np.zeros(n + 1)
@@ -26,7 +26,7 @@ def euler_scalar(f, y0, a, b, h):
 
 
 def euler_system(f, y0, a, b, h):
-    """Explicit Euler method for a system y' = f(x, y), y(a) = y0 (vector)."""
+    """Решает систему ОДУ y' = f(x, y) с начальным вектором y(a) = y0 явным методом Эйлера."""
     n = int(round((b - a) / h))
     x = a + h * np.arange(n + 1)
     y0 = np.asarray(y0, dtype=float)
