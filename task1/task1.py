@@ -53,29 +53,31 @@ def main():
             x_fine = np.linspace(a, b, 2000)
             y_fine = f(x_fine)
 
-            fig, ax = plt.subplots(figsize=(9, 5))
-            ax.plot(x_fine, y_fine, "-", color="black", linewidth=1.2,
-                    label=f"{f_name} (исходная функция)")
+            fig, axes = plt.subplots(2, 2, figsize=(12, 7), sharex=True,
+                                     sharey=True, layout="constrained")
+            source_ax, *grid_axes = axes.flat
+            source_ax.plot(x_fine, y_fine, color="black", linewidth=1.2)
+            source_ax.set_title("Исходная функция")
 
             markers = ["o", "s", "^"]
             colors = ["tab:red", "tab:blue", "tab:green"]
-            for h, marker, color in zip(STEPS, markers, colors):
+            for ax, h, marker, color in zip(grid_axes, STEPS, markers, colors):
                 x_grid = make_grid(a, b, h)
                 y_grid = f(x_grid)
-                ax.plot(x_grid, y_grid, marker, markersize=3, linestyle="none",
-                         color=color, alpha=0.7, label=f"сеточная функция, h={h}")
+                ax.plot(x_grid, y_grid, marker, markersize=1.5, linestyle="none",
+                        color=color)
+                ax.set_title(f"Сеточная функция, h = {h}")
 
-            ax.set_title(f"{f_name} на {seg_name}")
-            ax.set_xlabel("x")
-            ax.set_ylabel("y")
-            ax.legend(loc="best", fontsize=8)
-            ax.grid(True, alpha=0.3)
+            fig.suptitle(f"{f_name} на {seg_name}")
+            fig.supxlabel("x")
+            fig.supylabel("y")
+            for ax in axes.flat:
+                ax.grid(True, alpha=0.3)
 
             safe_name = f_name.replace("^", "").replace("/", "_").replace(" ", "")
             safe_seg = seg_name.replace(" ", "").replace(";", "_").replace(
                 "[", "").replace("]", "").replace("/", "div")
             out_path = os.path.join(OUT_DIR, f"{safe_name}_{safe_seg}.png")
-            fig.tight_layout()
             fig.savefig(out_path, dpi=150)
             plt.close(fig)
             print(f"saved {out_path}")

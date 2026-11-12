@@ -51,37 +51,38 @@ def main():
                 print(f"skip {f_name} on {seg_name}: x=-1 is a singularity")
                 continue
 
-            fig, ax = plt.subplots(figsize=(9, 5))
+            fig, axes = plt.subplots(3, 1, figsize=(11, 9), sharex=True,
+                                     sharey=True, layout="constrained")
+            analytic_ax, *numeric_axes = axes
 
             x_fine = np.linspace(a, b, 2000)
-            ax.plot(x_fine, df(x_fine), "-", color="black", linewidth=1.5,
-                    label="аналитическая производная")
+            analytic_ax.plot(x_fine, df(x_fine), color="black", linewidth=1.2)
+            analytic_ax.set_title("Аналитическая производная")
 
             colors = ["tab:red", "tab:blue"]
             markers = ["o", "s"]
-            for h, color, marker in zip(STEPS, colors, markers):
+            for ax, h, color, marker in zip(numeric_axes, STEPS, colors, markers):
                 x_grid = make_grid(a, b, h)
                 y_grid = f(x_grid)
                 # right (forward) difference formula: defined for n = 0..N-1,
                 # approximates the derivative at x_n
                 y_num = (y_grid[1:] - y_grid[:-1]) / h
                 x_num = x_grid[:-1]
-                ax.plot(x_num, y_num, marker, markersize=2.5, linestyle="none",
-                         color=color, alpha=0.7,
-                         label=f"численная производная, h={h}")
+                ax.plot(x_num, y_num, marker, markersize=1.5, linestyle="none",
+                        color=color)
+                ax.set_title(f"Численная производная, h = {h}")
 
-            ax.set_title(f"f(x) = {f_name}, f'(x) на {seg_name}")
-            ax.set_xlabel("x")
-            ax.set_ylabel("y'")
-            ax.legend(loc="best", fontsize=8)
-            ax.grid(True, alpha=0.3)
+            fig.suptitle(f"f(x) = {f_name}, f'(x) на {seg_name}")
+            fig.supxlabel("x")
+            fig.supylabel("y'")
+            for ax in axes:
+                ax.grid(True, alpha=0.3)
 
             safe_name = (f_name.replace("^", "").replace("/", "div")
                          .replace(" ", "").replace("*", ""))
             safe_seg = (seg_name.replace(" ", "").replace(";", "_")
                         .replace("[", "").replace("]", ""))
             out_path = os.path.join(OUT_DIR, f"{safe_name}_{safe_seg}.png")
-            fig.tight_layout()
             fig.savefig(out_path, dpi=150)
             plt.close(fig)
             print(f"saved {out_path}")
